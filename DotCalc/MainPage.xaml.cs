@@ -1,4 +1,7 @@
-﻿namespace DotCalc
+﻿using System.Collections.ObjectModel;
+using DotCalc.Models;
+
+namespace DotCalc
 {
     public partial class MainPage : ContentPage
     {
@@ -14,9 +17,13 @@
         private double _lastOperand = 0;
         private bool _justCalculated = false;
 
+        // История вычислений
+        public ObservableCollection<HistoryItem> History { get; } = [];
+        
         public MainPage()
         {
             InitializeComponent();
+            BindingContext = this;
         }
 
         private void UpdateDisplay(string value)
@@ -111,7 +118,12 @@
                     return;
                 }
                 
-                UpdateDisplay(FormatNumber(result));
+                string resultStr = FormatNumber(result);
+                UpdateDisplay(resultStr);
+                
+                // Добавляем в историю
+                AddToHistory(_expression, resultStr);
+                
                 _isNewEntry = true;
             }
             else if (!string.IsNullOrEmpty(_currentOperator))
@@ -138,11 +150,56 @@
                 }
                 
                 _storedValue = result;
-                UpdateDisplay(FormatNumber(result));
+                string resultStr = FormatNumber(result);
+                UpdateDisplay(resultStr);
+                
+                // Добавляем в историю
+                AddToHistory(_expression, resultStr);
+                
                 _currentOperator = "";
                 _isNewEntry = true;
                 _justCalculated = true;
             }
+        }
+
+        private void AddToHistory(string expression, string result)
+        {
+            History.Insert(0, new HistoryItem
+            {
+                Expression = expression,
+                Result = result
+            });
+        }
+
+        private void OnHistoryItemSelected(object? sender, SelectionChangedEventArgs e)
+        {
+            if (e.CurrentSelection.FirstOrDefault() is HistoryItem selectedItem)
+            {
+                // Восстанавливаем выражение и результат
+                UpdateExpression(selectedItem.Expression);
+                UpdateDisplay(selectedItem.Result);
+                
+                // Пытаемся распарсить результат для дальнейших вычислений
+                if (double.TryParse(selectedItem.Result, out double result))
+                {
+                    _storedValue = result;
+                }
+                
+                _isNewEntry = true;
+                _currentOperator = "";
+                _justCalculated = false;
+                
+                // Сбрасываем выделение
+                if (sender is CollectionView collectionView)
+                {
+                    collectionView.SelectedItem = null;
+                }
+            }
+        }
+
+        private void OnClearHistory(object? sender, EventArgs e)
+        {
+            History.Clear();
         }
 
         private static double CalculateResult(double left, string op, double right)

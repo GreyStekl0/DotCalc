@@ -50,108 +50,177 @@
             <Setter Property="BorderWidth" Value="0"/>
             <Setter Property="Margin" Value="2"/>
         </Style>
+        
+        <Style x:Key="HistoryItemStyle" TargetType="VerticalStackLayout">
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="BackgroundColor" Value="Transparent"/>
+        </Style>
     </ContentPage.Resources>
 
-    <Grid Padding="8" RowSpacing="2" ColumnSpacing="2">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="80"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
         
-        <!-- Expression Display -->
-        <Label x:Name="ExpressionLabel"
-               Grid.Row="0"
-               Text=""
-               TextColor="#6E6E6E"
-               FontSize="16"
-               HorizontalTextAlignment="End"
-               Padding="10,5"/>
-        
-        <!-- Main Display -->
-        <Label x:Name="DisplayLabel"
-               Grid.Row="2"
-               Text="0"
-               TextColor="#1E1E1E"
-               FontSize="48"
-               FontAttributes="Bold"
-               HorizontalTextAlignment="End"
-               VerticalTextAlignment="End"
-               Padding="10,5"
-               LineBreakMode="TailTruncation"/>
-        
-        <!-- Memory Buttons Row -->
-        <Grid Grid.Row="3" ColumnSpacing="2" Margin="0,10,0,5">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            
-            <Button Text="MC" Grid.Column="0" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemoryClear"/>
-            <Button Text="MR" Grid.Column="1" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemoryRecall"/>
-            <Button Text="M+" Grid.Column="2" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemoryAdd"/>
-            <Button Text="M-" Grid.Column="3" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemorySubtract"/>
-            <Button Text="MS" Grid.Column="4" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemoryStore"/>
-        </Grid>
-        
-        <!-- Calculator Buttons Grid -->
-        <Grid Grid.Row="4" RowSpacing="2" ColumnSpacing="2">
+        <!-- Calculator Panel -->
+        <Grid Grid.Column="0" Padding="8" RowSpacing="2" ColumnSpacing="2">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="80"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
             
-            <!-- Row 0: %, CE, C, Backspace -->
-            <Button Text="%" Grid.Row="0" Grid.Column="0" Style="{StaticResource FunctionButtonStyle}" Clicked="OnPercent"/>
-            <Button Text="CE" Grid.Row="0" Grid.Column="1" Style="{StaticResource FunctionButtonStyle}" Clicked="OnClearEntry"/>
-            <Button Text="C" Grid.Row="0" Grid.Column="2" Style="{StaticResource FunctionButtonStyle}" Clicked="OnClear"/>
-            <Button Text="⌫" Grid.Row="0" Grid.Column="3" Style="{StaticResource FunctionButtonStyle}" Clicked="OnBackspace"/>
+            <!-- Expression Display -->
+            <Label x:Name="ExpressionLabel"
+                   Grid.Row="0"
+                   Text=""
+                   TextColor="#6E6E6E"
+                   FontSize="16"
+                   HorizontalTextAlignment="End"
+                   Padding="10,5"/>
             
-            <!-- Row 1: 1/x, x², √x, ÷ -->
-            <Button Text="⅟𝑥" Grid.Row="1" Grid.Column="0" Style="{StaticResource FunctionButtonStyle}" Clicked="OnInverse"/>
-            <Button Text="𝑥²" Grid.Row="1" Grid.Column="1" Style="{StaticResource FunctionButtonStyle}" Clicked="OnSquare"/>
-            <Button Text="²√𝑥" Grid.Row="1" Grid.Column="2" Style="{StaticResource FunctionButtonStyle}" Clicked="OnSquareRoot"/>
-            <Button Text="÷" Grid.Row="1" Grid.Column="3" Style="{StaticResource OperatorButtonStyle}" Clicked="OnOperator"/>
+            <!-- Main Display -->
+            <Label x:Name="DisplayLabel"
+                   Grid.Row="2"
+                   Text="0"
+                   TextColor="#1E1E1E"
+                   FontSize="48"
+                   FontAttributes="Bold"
+                   HorizontalTextAlignment="End"
+                   VerticalTextAlignment="End"
+                   Padding="10,5"
+                   LineBreakMode="TailTruncation"/>
             
-            <!-- Row 2: 7, 8, 9, × -->
-            <Button Text="7" Grid.Row="2" Grid.Column="0" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
-            <Button Text="8" Grid.Row="2" Grid.Column="1" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
-            <Button Text="9" Grid.Row="2" Grid.Column="2" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
-            <Button Text="×" Grid.Row="2" Grid.Column="3" Style="{StaticResource OperatorButtonStyle}" Clicked="OnOperator"/>
+            <!-- Memory Buttons Row -->
+            <Grid Grid.Row="3" ColumnSpacing="2" Margin="0,10,0,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <Button Text="MC" Grid.Column="0" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemoryClear"/>
+                <Button Text="MR" Grid.Column="1" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemoryRecall"/>
+                <Button Text="M+" Grid.Column="2" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemoryAdd"/>
+                <Button Text="M-" Grid.Column="3" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemorySubtract"/>
+                <Button Text="MS" Grid.Column="4" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemoryStore"/>
+            </Grid>
             
-            <!-- Row 3: 4, 5, 6, - -->
-            <Button Text="4" Grid.Row="3" Grid.Column="0" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
-            <Button Text="5" Grid.Row="3" Grid.Column="1" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
-            <Button Text="6" Grid.Row="3" Grid.Column="2" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
-            <Button Text="−" Grid.Row="3" Grid.Column="3" Style="{StaticResource OperatorButtonStyle}" Clicked="OnOperator"/>
-            
-            <!-- Row 4: 1, 2, 3, + -->
-            <Button Text="1" Grid.Row="4" Grid.Column="0" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
-            <Button Text="2" Grid.Row="4" Grid.Column="1" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
-            <Button Text="3" Grid.Row="4" Grid.Column="2" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
-            <Button Text="+" Grid.Row="4" Grid.Column="3" Style="{StaticResource OperatorButtonStyle}" Clicked="OnOperator"/>
-            
-            <!-- Row 5: +/-, 0, ,, = -->
-            <Button Text="+/−" Grid.Row="5" Grid.Column="0" Style="{StaticResource FunctionButtonStyle}" Clicked="OnNegate"/>
-            <Button Text="0" Grid.Row="5" Grid.Column="1" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
-            <Button Text="," Grid.Row="5" Grid.Column="2" Style="{StaticResource NumberButtonStyle}" Clicked="OnDecimal"/>
-            <Button Text="=" Grid.Row="5" Grid.Column="3" Style="{StaticResource EqualsButtonStyle}" Clicked="OnEquals"/>
+            <!-- Calculator Buttons Grid -->
+            <Grid Grid.Row="4" RowSpacing="2" ColumnSpacing="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Row 0: %, CE, C, Backspace -->
+                <Button Text="%" Grid.Row="0" Grid.Column="0" Style="{StaticResource FunctionButtonStyle}" Clicked="OnPercent"/>
+                <Button Text="CE" Grid.Row="0" Grid.Column="1" Style="{StaticResource FunctionButtonStyle}" Clicked="OnClearEntry"/>
+                <Button Text="C" Grid.Row="0" Grid.Column="2" Style="{StaticResource FunctionButtonStyle}" Clicked="OnClear"/>
+                <Button Text="⌫" Grid.Row="0" Grid.Column="3" Style="{StaticResource FunctionButtonStyle}" Clicked="OnBackspace"/>
+                
+                <!-- Row 1: 1/x, x², √x, ÷ -->
+                <Button Text="⅟𝑥" Grid.Row="1" Grid.Column="0" Style="{StaticResource FunctionButtonStyle}" Clicked="OnInverse"/>
+                <Button Text="𝑥²" Grid.Row="1" Grid.Column="1" Style="{StaticResource FunctionButtonStyle}" Clicked="OnSquare"/>
+                <Button Text="²√𝑥" Grid.Row="1" Grid.Column="2" Style="{StaticResource FunctionButtonStyle}" Clicked="OnSquareRoot"/>
+                <Button Text="÷" Grid.Row="1" Grid.Column="3" Style="{StaticResource OperatorButtonStyle}" Clicked="OnOperator"/>
+                
+                <!-- Row 2: 7, 8, 9, × -->
+                <Button Text="7" Grid.Row="2" Grid.Column="0" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+                <Button Text="8" Grid.Row="2" Grid.Column="1" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+                <Button Text="9" Grid.Row="2" Grid.Column="2" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+                <Button Text="×" Grid.Row="2" Grid.Column="3" Style="{StaticResource OperatorButtonStyle}" Clicked="OnOperator"/>
+                
+                <!-- Row 3: 4, 5, 6, - -->
+                <Button Text="4" Grid.Row="3" Grid.Column="0" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+                <Button Text="5" Grid.Row="3" Grid.Column="1" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+                <Button Text="6" Grid.Row="3" Grid.Column="2" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+                <Button Text="−" Grid.Row="3" Grid.Column="3" Style="{StaticResource OperatorButtonStyle}" Clicked="OnOperator"/>
+                
+                <!-- Row 4: 1, 2, 3, + -->
+                <Button Text="1" Grid.Row="4" Grid.Column="0" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+                <Button Text="2" Grid.Row="4" Grid.Column="1" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+                <Button Text="3" Grid.Row="4" Grid.Column="2" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+                <Button Text="+" Grid.Row="4" Grid.Column="3" Style="{StaticResource OperatorButtonStyle}" Clicked="OnOperator"/>
+                
+                <!-- Row 5: +/-, 0, ,, = -->
+                <Button Text="+/−" Grid.Row="5" Grid.Column="0" Style="{StaticResource FunctionButtonStyle}" Clicked="OnNegate"/>
+                <Button Text="0" Grid.Row="5" Grid.Column="1" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+                <Button Text="," Grid.Row="5" Grid.Column="2" Style="{StaticResource NumberButtonStyle}" Clicked="OnDecimal"/>
+                <Button Text="=" Grid.Row="5" Grid.Column="3" Style="{StaticResource EqualsButtonStyle}" Clicked="OnEquals"/>
+            </Grid>
         </Grid>
+        
+        <!-- History Panel -->
+        <Border Grid.Column="1" 
+                BackgroundColor="#FAFAFA" 
+                StrokeThickness="0"
+                WidthRequest="220">
+            <Grid RowDefinitions="Auto,*,Auto">
+                <!-- History Header -->
+                <Label Grid.Row="0"
+                       Text="Журнал" 
+                       FontSize="18" 
+                       FontAttributes="Bold"
+                       TextColor="#1E1E1E"
+                       Padding="12,10"/>
+                
+                <!-- History List -->
+                <CollectionView x:Name="HistoryCollectionView"
+                                Grid.Row="1"
+                                ItemsSource="{Binding History}"
+                                SelectionMode="Single"
+                                SelectionChanged="OnHistoryItemSelected">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <VerticalStackLayout Padding="12,8">
+                                <Label Text="{Binding Expression}"
+                                       TextColor="#6E6E6E"
+                                       FontSize="13"
+                                       LineBreakMode="TailTruncation"/>
+                                <Label Text="{Binding Result}"
+                                       TextColor="#1E1E1E"
+                                       FontSize="18"
+                                       FontAttributes="Bold"
+                                       LineBreakMode="TailTruncation"/>
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Padding="20">
+                            <Label Text="История пуста"
+                                   TextColor="#9E9E9E"
+                                   FontSize="14"
+                                   HorizontalTextAlignment="Center"/>
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+                </CollectionView>
+                
+                <!-- Clear History Button -->
+                <Button Grid.Row="2"
+                        Text="🗑 Очистить журнал"
+                        BackgroundColor="Transparent"
+                        TextColor="#6E6E6E"
+                        FontSize="14"
+                        Clicked="OnClearHistory"
+                        Margin="10"/>
+            </Grid>
+        </Border>
     </Grid>
 
 </ContentPage>
