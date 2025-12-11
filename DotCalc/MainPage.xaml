@@ -246,12 +246,14 @@
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                         <CollectionView.EmptyView>
-                            <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Padding="20">
+                            <Grid HorizontalOptions="Fill" VerticalOptions="Fill">
                                 <Label Text="История пуста"
                                        TextColor="#9E9E9E"
                                        FontSize="14"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
                                        HorizontalTextAlignment="Center"/>
-                            </VerticalStackLayout>
+                            </Grid>
                         </CollectionView.EmptyView>
                     </CollectionView>
                 </Grid>
@@ -300,12 +302,14 @@
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                         <CollectionView.EmptyView>
-                            <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Padding="20">
+                            <Grid HorizontalOptions="Fill" VerticalOptions="Fill">
                                 <Label Text="В памяти ничего нет"
                                        TextColor="#9E9E9E"
                                        FontSize="14"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
                                        HorizontalTextAlignment="Center"/>
-                            </VerticalStackLayout>
+                            </Grid>
                         </CollectionView.EmptyView>
                     </CollectionView>
                 </Grid>
