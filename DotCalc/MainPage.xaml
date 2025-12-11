@@ -1,0 +1,157 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="DotCalc.MainPage"
+             Title="Калькулятор"
+             BackgroundColor="#F3F3F3">
+
+    <ContentPage.Resources>
+        <Style x:Key="NumberButtonStyle" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="#FAFAFA"/>
+            <Setter Property="TextColor" Value="#1E1E1E"/>
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="BorderWidth" Value="0"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+        
+        <Style x:Key="OperatorButtonStyle" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="#F9F9F9"/>
+            <Setter Property="TextColor" Value="#1E1E1E"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="BorderWidth" Value="0"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+        
+        <Style x:Key="FunctionButtonStyle" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="#F0F0F0"/>
+            <Setter Property="TextColor" Value="#1E1E1E"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="BorderWidth" Value="0"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+        
+        <Style x:Key="MemoryButtonStyle" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="Transparent"/>
+            <Setter Property="TextColor" Value="#6E6E6E"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="BorderWidth" Value="0"/>
+            <Setter Property="Margin" Value="1"/>
+        </Style>
+        
+        <Style x:Key="EqualsButtonStyle" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="#0078D4"/>
+            <Setter Property="TextColor" Value="White"/>
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="BorderWidth" Value="0"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid Padding="8" RowSpacing="2" ColumnSpacing="2">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="80"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Expression Display -->
+        <Label x:Name="ExpressionLabel"
+               Grid.Row="0"
+               Text=""
+               TextColor="#6E6E6E"
+               FontSize="16"
+               HorizontalTextAlignment="End"
+               Padding="10,5"/>
+        
+        <!-- Main Display -->
+        <Label x:Name="DisplayLabel"
+               Grid.Row="2"
+               Text="0"
+               TextColor="#1E1E1E"
+               FontSize="48"
+               FontAttributes="Bold"
+               HorizontalTextAlignment="End"
+               VerticalTextAlignment="End"
+               Padding="10,5"
+               LineBreakMode="TailTruncation"/>
+        
+        <!-- Memory Buttons Row -->
+        <Grid Grid.Row="3" ColumnSpacing="2" Margin="0,10,0,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <Button Text="MC" Grid.Column="0" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemoryClear"/>
+            <Button Text="MR" Grid.Column="1" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemoryRecall"/>
+            <Button Text="M+" Grid.Column="2" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemoryAdd"/>
+            <Button Text="M-" Grid.Column="3" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemorySubtract"/>
+            <Button Text="MS" Grid.Column="4" Style="{StaticResource MemoryButtonStyle}" Clicked="OnMemoryStore"/>
+        </Grid>
+        
+        <!-- Calculator Buttons Grid -->
+        <Grid Grid.Row="4" RowSpacing="2" ColumnSpacing="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Row 0: %, CE, C, Backspace -->
+            <Button Text="%" Grid.Row="0" Grid.Column="0" Style="{StaticResource FunctionButtonStyle}" Clicked="OnPercent"/>
+            <Button Text="CE" Grid.Row="0" Grid.Column="1" Style="{StaticResource FunctionButtonStyle}" Clicked="OnClearEntry"/>
+            <Button Text="C" Grid.Row="0" Grid.Column="2" Style="{StaticResource FunctionButtonStyle}" Clicked="OnClear"/>
+            <Button Text="⌫" Grid.Row="0" Grid.Column="3" Style="{StaticResource FunctionButtonStyle}" Clicked="OnBackspace"/>
+            
+            <!-- Row 1: 1/x, x², √x, ÷ -->
+            <Button Text="⅟𝑥" Grid.Row="1" Grid.Column="0" Style="{StaticResource FunctionButtonStyle}" Clicked="OnInverse"/>
+            <Button Text="𝑥²" Grid.Row="1" Grid.Column="1" Style="{StaticResource FunctionButtonStyle}" Clicked="OnSquare"/>
+            <Button Text="²√𝑥" Grid.Row="1" Grid.Column="2" Style="{StaticResource FunctionButtonStyle}" Clicked="OnSquareRoot"/>
+            <Button Text="÷" Grid.Row="1" Grid.Column="3" Style="{StaticResource OperatorButtonStyle}" Clicked="OnOperator"/>
+            
+            <!-- Row 2: 7, 8, 9, × -->
+            <Button Text="7" Grid.Row="2" Grid.Column="0" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+            <Button Text="8" Grid.Row="2" Grid.Column="1" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+            <Button Text="9" Grid.Row="2" Grid.Column="2" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+            <Button Text="×" Grid.Row="2" Grid.Column="3" Style="{StaticResource OperatorButtonStyle}" Clicked="OnOperator"/>
+            
+            <!-- Row 3: 4, 5, 6, - -->
+            <Button Text="4" Grid.Row="3" Grid.Column="0" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+            <Button Text="5" Grid.Row="3" Grid.Column="1" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+            <Button Text="6" Grid.Row="3" Grid.Column="2" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+            <Button Text="−" Grid.Row="3" Grid.Column="3" Style="{StaticResource OperatorButtonStyle}" Clicked="OnOperator"/>
+            
+            <!-- Row 4: 1, 2, 3, + -->
+            <Button Text="1" Grid.Row="4" Grid.Column="0" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+            <Button Text="2" Grid.Row="4" Grid.Column="1" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+            <Button Text="3" Grid.Row="4" Grid.Column="2" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+            <Button Text="+" Grid.Row="4" Grid.Column="3" Style="{StaticResource OperatorButtonStyle}" Clicked="OnOperator"/>
+            
+            <!-- Row 5: +/-, 0, ,, = -->
+            <Button Text="+/−" Grid.Row="5" Grid.Column="0" Style="{StaticResource FunctionButtonStyle}" Clicked="OnNegate"/>
+            <Button Text="0" Grid.Row="5" Grid.Column="1" Style="{StaticResource NumberButtonStyle}" Clicked="OnDigit"/>
+            <Button Text="," Grid.Row="5" Grid.Column="2" Style="{StaticResource NumberButtonStyle}" Clicked="OnDecimal"/>
+            <Button Text="=" Grid.Row="5" Grid.Column="3" Style="{StaticResource EqualsButtonStyle}" Clicked="OnEquals"/>
+        </Grid>
+    </Grid>
+
+</ContentPage>
