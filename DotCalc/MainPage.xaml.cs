@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using DotCalc.Data;
 using DotCalc.Models;
 
 namespace DotCalc
@@ -25,10 +26,43 @@ namespace DotCalc
         // Текущий активный элемент памяти (для hover эффекта)
         private MemoryItem? _currentHoveredMemoryItem;
         
+        // База данных для памяти
+        private readonly MemoryDatabase _memoryDb = new();
+        
         public MainPage()
         {
             InitializeComponent();
             BindingContext = this;
+            
+            // Загружаем память из БД при запуске
+            Loaded += OnPageLoaded;
+        }
+
+        private async void OnPageLoaded(object? sender, EventArgs e)
+        {
+            await LoadMemoryFromDatabaseAsync();
+        }
+
+        private async Task LoadMemoryFromDatabaseAsync()
+        {
+            try
+            {
+                var entities = await _memoryDb.GetAllAsync();
+                MemoryList.Clear();
+                
+                foreach (var entity in entities)
+                {
+                    MemoryList.Add(new MemoryItem
+                    {
+                        DatabaseId = entity.Id,
+                        Value = entity.Value
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading memory: {ex.Message}");
+            }
         }
 
         private void UpdateDisplay(string value)
@@ -66,7 +100,7 @@ namespace DotCalc
             ClearPanelButton.Text = "🗑 Очистить память";
         }
 
-        private void OnClearPanel(object? sender, EventArgs e)
+        private async void OnClearPanel(object? sender, EventArgs e)
         {
             if (HistoryContent.IsVisible)
             {
@@ -74,7 +108,7 @@ namespace DotCalc
             }
             else
             {
-                MemoryList.Clear();
+                await ClearAllMemoryAsync();
             }
         }
 
@@ -241,21 +275,45 @@ namespace DotCalc
 
         private void OnMemoryItemSelected(object? sender, SelectionChangedEventArgs e)
         {
-            // Снимаем hover с предыдущего элемента
-            if (_currentHoveredMemoryItem != null)
-            {
-                _currentHoveredMemoryItem.IsHovered = false;
-            }
-            
+            // Больше не используется для hover, но оставим для выбора значения по клику
             if (e.CurrentSelection.FirstOrDefault() is MemoryItem selectedItem)
             {
-                // Устанавливаем hover для выбранного элемента
-                selectedItem.IsHovered = true;
-                _currentHoveredMemoryItem = selectedItem;
-                
                 // Устанавливаем значение на дисплей
                 UpdateDisplay(selectedItem.DisplayValue);
                 _isNewEntry = true;
+                
+                // Сбрасываем выделение
+                if (sender is CollectionView collectionView)
+                {
+                    collectionView.SelectedItem = null;
+                }
+            }
+        }
+
+        private void OnMemoryItemPointerEntered(object? sender, PointerEventArgs e)
+        {
+            if (sender is Grid grid && grid.BindingContext is MemoryItem item)
+            {
+                // Снимаем hover с предыдущего элемента
+                if (_currentHoveredMemoryItem != null && _currentHoveredMemoryItem != item)
+                {
+                    _currentHoveredMemoryItem.IsHovered = false;
+                }
+                
+                item.IsHovered = true;
+                _currentHoveredMemoryItem = item;
+            }
+        }
+
+        private void OnMemoryItemPointerExited(object? sender, PointerEventArgs e)
+        {
+            if (sender is Grid grid && grid.BindingContext is MemoryItem item)
+            {
+                item.IsHovered = false;
+                if (_currentHoveredMemoryItem == item)
+                {
+                    _currentHoveredMemoryItem = null;
+                }
             }
         }
 
@@ -411,13 +469,19 @@ namespace DotCalc
             }
         }
 
-        // Memory Functions - работа со списком памяти
+        // Memory Functions - работа со списком памяти с сохранением в БД
         
         /// <summary>
         /// MC - очищает всю память (все элементы)
         /// </summary>
-        private void OnMemoryClear(object? sender, EventArgs e)
+        private async void OnMemoryClear(object? sender, EventArgs e)
         {
+            await ClearAllMemoryAsync();
+        }
+
+        private async Task ClearAllMemoryAsync()
+        {
+            await _memoryDb.DeleteAllAsync();
             MemoryList.Clear();
             _currentHoveredMemoryItem = null;
         }
@@ -438,18 +502,20 @@ namespace DotCalc
         /// <summary>
         /// M+ - добавляет текущее значение к последнему элементу в памяти
         /// </summary>
-        private void OnMemoryAdd(object? sender, EventArgs e)
+        private async void OnMemoryAdd(object? sender, EventArgs e)
         {
             if (double.TryParse(DisplayLabel.Text, out double value))
             {
                 if (MemoryList.Count > 0)
                 {
-                    MemoryList[0].Value += value;
+                    var item = MemoryList[0];
+                    item.Value += value;
+                    await UpdateMemoryItemInDatabaseAsync(item);
                 }
                 else
                 {
                     // Если память пуста, создаём новый элемент
-                    MemoryList.Insert(0, new MemoryItem { Value = value });
+                    await AddMemoryItemAsync(value);
                 }
             }
         }
@@ -457,18 +523,20 @@ namespace DotCalc
         /// <summary>
         /// M- - вычитает текущее значение из последнего элемента в памяти
         /// </summary>
-        private void OnMemorySubtract(object? sender, EventArgs e)
+        private async void OnMemorySubtract(object? sender, EventArgs e)
         {
             if (double.TryParse(DisplayLabel.Text, out double value))
             {
                 if (MemoryList.Count > 0)
                 {
-                    MemoryList[0].Value -= value;
+                    var item = MemoryList[0];
+                    item.Value -= value;
+                    await UpdateMemoryItemInDatabaseAsync(item);
                 }
                 else
                 {
                     // Если память пуста, создаём новый элемент с отрицательным значением
-                    MemoryList.Insert(0, new MemoryItem { Value = -value });
+                    await AddMemoryItemAsync(-value);
                 }
             }
         }
@@ -476,12 +544,59 @@ namespace DotCalc
         /// <summary>
         /// MS - сохраняет текущее значение в память (новый элемент)
         /// </summary>
-        private void OnMemoryStore(object? sender, EventArgs e)
+        private async void OnMemoryStore(object? sender, EventArgs e)
         {
             if (double.TryParse(DisplayLabel.Text, out double value))
             {
-                MemoryList.Insert(0, new MemoryItem { Value = value });
+                await AddMemoryItemAsync(value);
             }
+        }
+
+        private async Task AddMemoryItemAsync(double value)
+        {
+            // Сдвигаем порядок существующих элементов
+            var allEntities = await _memoryDb.GetAllAsync();
+            foreach (var entity in allEntities)
+            {
+                entity.Order++;
+                await _memoryDb.UpdateAsync(entity);
+            }
+
+            // Создаём новую запись в БД
+            var newEntity = new MemoryItemEntity
+            {
+                Value = value,
+                Order = 0,
+                CreatedAt = DateTime.Now
+            };
+            await _memoryDb.InsertAsync(newEntity);
+
+            // Добавляем в UI
+            MemoryList.Insert(0, new MemoryItem
+            {
+                DatabaseId = newEntity.Id,
+                Value = value
+            });
+        }
+
+        private async Task UpdateMemoryItemInDatabaseAsync(MemoryItem item)
+        {
+            var entity = new MemoryItemEntity
+            {
+                Id = item.DatabaseId,
+                Value = item.Value
+            };
+            
+            // Получаем существующую запись для сохранения Order
+            var allEntities = await _memoryDb.GetAllAsync();
+            var existingEntity = allEntities.FirstOrDefault(e => e.Id == item.DatabaseId);
+            if (existingEntity != null)
+            {
+                entity.Order = existingEntity.Order;
+                entity.CreatedAt = existingEntity.CreatedAt;
+            }
+            
+            await _memoryDb.UpdateAsync(entity);
         }
 
         // Memory Item Actions (для кнопок на отдельных элементах памяти)
@@ -489,28 +604,44 @@ namespace DotCalc
         /// <summary>
         /// MC на отдельном элементе - удаляет только этот элемент
         /// </summary>
-        private void OnMemoryItemClear(object? sender, EventArgs e)
+        private async void OnMemoryItemClear(object? sender, EventArgs e)
         {
-            if (sender is Button button && button.BindingContext is MemoryItem item)
+            if (sender is Button button)
             {
-                if (_currentHoveredMemoryItem == item)
+                var item = GetMemoryItemFromButton(button);
+                if (item != null)
                 {
-                    _currentHoveredMemoryItem = null;
+                    await DeleteMemoryItemAsync(item);
                 }
-                MemoryList.Remove(item);
             }
+        }
+
+        private async Task DeleteMemoryItemAsync(MemoryItem item)
+        {
+            // Удаляем из БД
+            var entity = new MemoryItemEntity { Id = item.DatabaseId };
+            await _memoryDb.DeleteAsync(entity);
+
+            // Удаляем из UI
+            if (_currentHoveredMemoryItem == item)
+            {
+                _currentHoveredMemoryItem = null;
+            }
+            MemoryList.Remove(item);
         }
 
         /// <summary>
         /// M+ на отдельном элементе - добавляет текущее значение к этому элементу
         /// </summary>
-        private void OnMemoryItemAdd(object? sender, EventArgs e)
+        private async void OnMemoryItemAdd(object? sender, EventArgs e)
         {
-            if (sender is Button button && button.BindingContext is MemoryItem item)
+            if (sender is Button button)
             {
-                if (double.TryParse(DisplayLabel.Text, out double value))
+                var item = GetMemoryItemFromButton(button);
+                if (item != null && double.TryParse(DisplayLabel.Text, out double value))
                 {
                     item.Value += value;
+                    await UpdateMemoryItemInDatabaseAsync(item);
                 }
             }
         }
@@ -518,15 +649,29 @@ namespace DotCalc
         /// <summary>
         /// M- на отдельном элементе - вычитает текущее значение из этого элемента
         /// </summary>
-        private void OnMemoryItemSubtract(object? sender, EventArgs e)
+        private async void OnMemoryItemSubtract(object? sender, EventArgs e)
         {
-            if (sender is Button button && button.BindingContext is MemoryItem item)
+            if (sender is Button button)
             {
-                if (double.TryParse(DisplayLabel.Text, out double value))
+                var item = GetMemoryItemFromButton(button);
+                if (item != null && double.TryParse(DisplayLabel.Text, out double value))
                 {
                     item.Value -= value;
+                    await UpdateMemoryItemInDatabaseAsync(item);
                 }
             }
+        }
+
+        private static MemoryItem? GetMemoryItemFromButton(Button button)
+        {
+            // Поднимаемся по визуальному дереву: Button -> HorizontalStackLayout -> Grid
+            if (button.Parent is HorizontalStackLayout stackLayout && 
+                stackLayout.Parent is Grid grid && 
+                grid.BindingContext is MemoryItem item)
+            {
+                return item;
+            }
+            return null;
         }
 
         private static string FormatNumber(double value)

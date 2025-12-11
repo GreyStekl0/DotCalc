@@ -260,11 +260,14 @@
                 <Grid x:Name="MemoryContent" Grid.Row="1" IsVisible="False">
                     <CollectionView x:Name="MemoryCollectionView"
                                     ItemsSource="{Binding MemoryList}"
-                                    SelectionMode="Single"
-                                    SelectionChanged="OnMemoryItemSelected">
+                                    SelectionMode="None">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <Grid Padding="12,8">
+                                    <Grid.GestureRecognizers>
+                                        <PointerGestureRecognizer PointerEntered="OnMemoryItemPointerEntered"
+                                                                  PointerExited="OnMemoryItemPointerExited"/>
+                                    </Grid.GestureRecognizers>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
@@ -285,16 +288,13 @@
                                                            IsVisible="{Binding IsHovered}">
                                         <Button Text="MC" 
                                                 Style="{StaticResource MemoryItemButtonStyle}"
-                                                Clicked="OnMemoryItemClear"
-                                                BindingContext="{Binding .}"/>
+                                                Clicked="OnMemoryItemClear"/>
                                         <Button Text="M+" 
                                                 Style="{StaticResource MemoryItemButtonStyle}"
-                                                Clicked="OnMemoryItemAdd"
-                                                BindingContext="{Binding .}"/>
+                                                Clicked="OnMemoryItemAdd"/>
                                         <Button Text="M-" 
                                                 Style="{StaticResource MemoryItemButtonStyle}"
-                                                Clicked="OnMemoryItemSubtract"
-                                                BindingContext="{Binding .}"/>
+                                                Clicked="OnMemoryItemSubtract"/>
                                     </HorizontalStackLayout>
                                 </Grid>
                             </DataTemplate>

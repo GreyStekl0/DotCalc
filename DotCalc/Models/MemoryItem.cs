@@ -8,6 +8,11 @@ namespace DotCalc.Models
         private double _value;
         private bool _isHovered;
 
+        /// <summary>
+        /// ID записи в базе данных
+        /// </summary>
+        public int DatabaseId { get; set; }
+
         public double Value
         {
             get => _value;
