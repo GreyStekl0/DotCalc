@@ -9,7 +9,6 @@ namespace DotCalc
         private double _storedValue = 0;
         private string _currentOperator = "";
         private bool _isNewEntry = true;
-        private double _memory = 0;
         private string _expression = "";
         
         // Для повторения последней операции при нажатии =
@@ -19,6 +18,12 @@ namespace DotCalc
 
         // История вычислений
         public ObservableCollection<HistoryItem> History { get; } = [];
+        
+        // Память (список значений)
+        public ObservableCollection<MemoryItem> MemoryList { get; } = [];
+        
+        // Текущий активный элемент памяти (для hover эффекта)
+        private MemoryItem? _currentHoveredMemoryItem;
         
         public MainPage()
         {
@@ -34,6 +39,43 @@ namespace DotCalc
         private void UpdateExpression(string expression)
         {
             ExpressionLabel.Text = expression;
+        }
+
+        // Tab switching
+        private void OnHistoryTabClicked(object? sender, EventArgs e)
+        {
+            HistoryContent.IsVisible = true;
+            MemoryContent.IsVisible = false;
+            
+            HistoryTabButton.Style = (Style)Resources["TabButtonActiveStyle"];
+            MemoryTabButton.Style = (Style)Resources["TabButtonStyle"];
+            
+            HistoryTabIndicator.HorizontalOptions = LayoutOptions.Start;
+            ClearPanelButton.Text = "🗑 Очистить журнал";
+        }
+
+        private void OnMemoryTabClicked(object? sender, EventArgs e)
+        {
+            HistoryContent.IsVisible = false;
+            MemoryContent.IsVisible = true;
+            
+            HistoryTabButton.Style = (Style)Resources["TabButtonStyle"];
+            MemoryTabButton.Style = (Style)Resources["TabButtonActiveStyle"];
+            
+            HistoryTabIndicator.HorizontalOptions = LayoutOptions.End;
+            ClearPanelButton.Text = "🗑 Очистить память";
+        }
+
+        private void OnClearPanel(object? sender, EventArgs e)
+        {
+            if (HistoryContent.IsVisible)
+            {
+                OnClearHistory(sender, e);
+            }
+            else
+            {
+                MemoryList.Clear();
+            }
         }
 
         private void OnDigit(object? sender, EventArgs e)
@@ -197,6 +239,26 @@ namespace DotCalc
             }
         }
 
+        private void OnMemoryItemSelected(object? sender, SelectionChangedEventArgs e)
+        {
+            // Снимаем hover с предыдущего элемента
+            if (_currentHoveredMemoryItem != null)
+            {
+                _currentHoveredMemoryItem.IsHovered = false;
+            }
+            
+            if (e.CurrentSelection.FirstOrDefault() is MemoryItem selectedItem)
+            {
+                // Устанавливаем hover для выбранного элемента
+                selectedItem.IsHovered = true;
+                _currentHoveredMemoryItem = selectedItem;
+                
+                // Устанавливаем значение на дисплей
+                UpdateDisplay(selectedItem.DisplayValue);
+                _isNewEntry = true;
+            }
+        }
+
         private void OnClearHistory(object? sender, EventArgs e)
         {
             History.Clear();
@@ -349,39 +411,121 @@ namespace DotCalc
             }
         }
 
-        // Memory Functions
+        // Memory Functions - работа со списком памяти
+        
+        /// <summary>
+        /// MC - очищает всю память (все элементы)
+        /// </summary>
         private void OnMemoryClear(object? sender, EventArgs e)
         {
-            _memory = 0;
+            MemoryList.Clear();
+            _currentHoveredMemoryItem = null;
         }
 
+        /// <summary>
+        /// MR - вызывает последний (верхний) элемент из памяти
+        /// </summary>
         private void OnMemoryRecall(object? sender, EventArgs e)
         {
-            UpdateDisplay(FormatNumber(_memory));
-            _isNewEntry = true;
+            if (MemoryList.Count > 0)
+            {
+                var lastItem = MemoryList[0];
+                UpdateDisplay(lastItem.DisplayValue);
+                _isNewEntry = true;
+            }
         }
 
+        /// <summary>
+        /// M+ - добавляет текущее значение к последнему элементу в памяти
+        /// </summary>
         private void OnMemoryAdd(object? sender, EventArgs e)
         {
             if (double.TryParse(DisplayLabel.Text, out double value))
             {
-                _memory += value;
+                if (MemoryList.Count > 0)
+                {
+                    MemoryList[0].Value += value;
+                }
+                else
+                {
+                    // Если память пуста, создаём новый элемент
+                    MemoryList.Insert(0, new MemoryItem { Value = value });
+                }
             }
         }
 
+        /// <summary>
+        /// M- - вычитает текущее значение из последнего элемента в памяти
+        /// </summary>
         private void OnMemorySubtract(object? sender, EventArgs e)
         {
             if (double.TryParse(DisplayLabel.Text, out double value))
             {
-                _memory -= value;
+                if (MemoryList.Count > 0)
+                {
+                    MemoryList[0].Value -= value;
+                }
+                else
+                {
+                    // Если память пуста, создаём новый элемент с отрицательным значением
+                    MemoryList.Insert(0, new MemoryItem { Value = -value });
+                }
             }
         }
 
+        /// <summary>
+        /// MS - сохраняет текущее значение в память (новый элемент)
+        /// </summary>
         private void OnMemoryStore(object? sender, EventArgs e)
         {
             if (double.TryParse(DisplayLabel.Text, out double value))
             {
-                _memory = value;
+                MemoryList.Insert(0, new MemoryItem { Value = value });
+            }
+        }
+
+        // Memory Item Actions (для кнопок на отдельных элементах памяти)
+        
+        /// <summary>
+        /// MC на отдельном элементе - удаляет только этот элемент
+        /// </summary>
+        private void OnMemoryItemClear(object? sender, EventArgs e)
+        {
+            if (sender is Button button && button.BindingContext is MemoryItem item)
+            {
+                if (_currentHoveredMemoryItem == item)
+                {
+                    _currentHoveredMemoryItem = null;
+                }
+                MemoryList.Remove(item);
+            }
+        }
+
+        /// <summary>
+        /// M+ на отдельном элементе - добавляет текущее значение к этому элементу
+        /// </summary>
+        private void OnMemoryItemAdd(object? sender, EventArgs e)
+        {
+            if (sender is Button button && button.BindingContext is MemoryItem item)
+            {
+                if (double.TryParse(DisplayLabel.Text, out double value))
+                {
+                    item.Value += value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// M- на отдельном элементе - вычитает текущее значение из этого элемента
+        /// </summary>
+        private void OnMemoryItemSubtract(object? sender, EventArgs e)
+        {
+            if (sender is Button button && button.BindingContext is MemoryItem item)
+            {
+                if (double.TryParse(DisplayLabel.Text, out double value))
+                {
+                    item.Value -= value;
+                }
             }
         }
 

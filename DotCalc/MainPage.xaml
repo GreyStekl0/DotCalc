@@ -55,6 +55,34 @@
             <Setter Property="Padding" Value="10,8"/>
             <Setter Property="BackgroundColor" Value="Transparent"/>
         </Style>
+        
+        <Style x:Key="TabButtonStyle" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="Transparent"/>
+            <Setter Property="TextColor" Value="#6E6E6E"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="BorderWidth" Value="0"/>
+            <Setter Property="Padding" Value="12,8"/>
+        </Style>
+        
+        <Style x:Key="TabButtonActiveStyle" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="Transparent"/>
+            <Setter Property="TextColor" Value="#1E1E1E"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontAttributes" Value="Bold"/>
+            <Setter Property="BorderWidth" Value="0"/>
+            <Setter Property="Padding" Value="12,8"/>
+        </Style>
+        
+        <Style x:Key="MemoryItemButtonStyle" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="#E0E0E0"/>
+            <Setter Property="TextColor" Value="#1E1E1E"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="BorderWidth" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="HeightRequest" Value="28"/>
+            <Setter Property="MinimumWidthRequest" Value="36"/>
+        </Style>
     </ContentPage.Resources>
 
     <Grid>
@@ -166,58 +194,130 @@
             </Grid>
         </Grid>
         
-        <!-- History Panel -->
+        <!-- History/Memory Panel -->
         <Border Grid.Column="1" 
                 BackgroundColor="#FAFAFA" 
                 StrokeThickness="0"
                 WidthRequest="220">
             <Grid RowDefinitions="Auto,*,Auto">
-                <!-- History Header -->
-                <Label Grid.Row="0"
-                       Text="Журнал" 
-                       FontSize="18" 
-                       FontAttributes="Bold"
-                       TextColor="#1E1E1E"
-                       Padding="12,10"/>
+                <!-- Tab Header -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,*" Padding="4,4,4,0">
+                    <Button x:Name="HistoryTabButton"
+                            Grid.Column="0"
+                            Text="Журнал"
+                            Style="{StaticResource TabButtonActiveStyle}"
+                            Clicked="OnHistoryTabClicked"/>
+                    <Button x:Name="MemoryTabButton"
+                            Grid.Column="1"
+                            Text="Память"
+                            Style="{StaticResource TabButtonStyle}"
+                            Clicked="OnMemoryTabClicked"/>
+                </Grid>
                 
-                <!-- History List -->
-                <CollectionView x:Name="HistoryCollectionView"
-                                Grid.Row="1"
-                                ItemsSource="{Binding History}"
-                                SelectionMode="Single"
-                                SelectionChanged="OnHistoryItemSelected">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <VerticalStackLayout Padding="12,8">
-                                <Label Text="{Binding Expression}"
-                                       TextColor="#6E6E6E"
-                                       FontSize="13"
-                                       LineBreakMode="TailTruncation"/>
-                                <Label Text="{Binding Result}"
-                                       TextColor="#1E1E1E"
-                                       FontSize="18"
-                                       FontAttributes="Bold"
-                                       LineBreakMode="TailTruncation"/>
+                <!-- Tab Indicator -->
+                <BoxView x:Name="HistoryTabIndicator"
+                         Grid.Row="0"
+                         HeightRequest="2"
+                         Color="#0078D4"
+                         HorizontalOptions="Start"
+                         VerticalOptions="End"
+                         WidthRequest="110"
+                         Margin="0,0,0,0"/>
+                
+                <!-- History Content -->
+                <Grid x:Name="HistoryContent" Grid.Row="1" IsVisible="True">
+                    <CollectionView x:Name="HistoryCollectionView"
+                                    ItemsSource="{Binding History}"
+                                    SelectionMode="Single"
+                                    SelectionChanged="OnHistoryItemSelected">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <VerticalStackLayout Padding="12,8">
+                                    <Label Text="{Binding Expression}"
+                                           TextColor="#6E6E6E"
+                                           FontSize="13"
+                                           LineBreakMode="TailTruncation"/>
+                                    <Label Text="{Binding Result}"
+                                           TextColor="#1E1E1E"
+                                           FontSize="18"
+                                           FontAttributes="Bold"
+                                           LineBreakMode="TailTruncation"/>
+                                </VerticalStackLayout>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Padding="20">
+                                <Label Text="История пуста"
+                                       TextColor="#9E9E9E"
+                                       FontSize="14"
+                                       HorizontalTextAlignment="Center"/>
                             </VerticalStackLayout>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                    <CollectionView.EmptyView>
-                        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Padding="20">
-                            <Label Text="История пуста"
-                                   TextColor="#9E9E9E"
-                                   FontSize="14"
-                                   HorizontalTextAlignment="Center"/>
-                        </VerticalStackLayout>
-                    </CollectionView.EmptyView>
-                </CollectionView>
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </Grid>
                 
-                <!-- Clear History Button -->
-                <Button Grid.Row="2"
+                <!-- Memory Content -->
+                <Grid x:Name="MemoryContent" Grid.Row="1" IsVisible="False">
+                    <CollectionView x:Name="MemoryCollectionView"
+                                    ItemsSource="{Binding MemoryList}"
+                                    SelectionMode="Single"
+                                    SelectionChanged="OnMemoryItemSelected">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="12,8">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    
+                                    <!-- Memory Value -->
+                                    <Label Grid.Row="0"
+                                           Text="{Binding DisplayValue}"
+                                           TextColor="#1E1E1E"
+                                           FontSize="20"
+                                           FontAttributes="Bold"
+                                           LineBreakMode="TailTruncation"/>
+                                    
+                                    <!-- Action Buttons (shown on hover) -->
+                                    <HorizontalStackLayout Grid.Row="1" 
+                                                           Spacing="4" 
+                                                           Margin="0,4,0,0"
+                                                           IsVisible="{Binding IsHovered}">
+                                        <Button Text="MC" 
+                                                Style="{StaticResource MemoryItemButtonStyle}"
+                                                Clicked="OnMemoryItemClear"
+                                                BindingContext="{Binding .}"/>
+                                        <Button Text="M+" 
+                                                Style="{StaticResource MemoryItemButtonStyle}"
+                                                Clicked="OnMemoryItemAdd"
+                                                BindingContext="{Binding .}"/>
+                                        <Button Text="M-" 
+                                                Style="{StaticResource MemoryItemButtonStyle}"
+                                                Clicked="OnMemoryItemSubtract"
+                                                BindingContext="{Binding .}"/>
+                                    </HorizontalStackLayout>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Padding="20">
+                                <Label Text="В памяти ничего нет"
+                                       TextColor="#9E9E9E"
+                                       FontSize="14"
+                                       HorizontalTextAlignment="Center"/>
+                            </VerticalStackLayout>
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </Grid>
+                
+                <!-- Clear Button (changes based on active tab) -->
+                <Button x:Name="ClearPanelButton"
+                        Grid.Row="2"
                         Text="🗑 Очистить журнал"
                         BackgroundColor="Transparent"
                         TextColor="#6E6E6E"
                         FontSize="14"
-                        Clicked="OnClearHistory"
+                        Clicked="OnClearPanel"
                         Margin="10"/>
             </Grid>
         </Border>
