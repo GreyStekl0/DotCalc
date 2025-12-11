@@ -8,6 +8,11 @@
         private bool _isNewEntry = true;
         private double _memory = 0;
         private string _expression = "";
+        
+        // Для повторения последней операции при нажатии =
+        private string _lastOperator = "";
+        private double _lastOperand = 0;
+        private bool _justCalculated = false;
 
         public MainPage()
         {
@@ -81,34 +86,82 @@
                 _expression = FormatNumber(_storedValue) + " " + op;
                 UpdateExpression(_expression);
                 _isNewEntry = true;
+                _justCalculated = false;
             }
         }
 
         private void OnEquals(object? sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(_currentOperator))
+            if (_justCalculated && !string.IsNullOrEmpty(_lastOperator))
+            {
+                // Повторяем последнюю операцию: результат становится первым операндом
+                _storedValue = double.TryParse(DisplayLabel.Text, out double val) ? val : 0;
+                
+                _expression = FormatNumber(_storedValue) + " " + _lastOperator + " " + FormatNumber(_lastOperand) + " =";
+                UpdateExpression(_expression);
+                
+                // Выполняем вычисление с сохранённым операндом
+                double result = CalculateResult(_storedValue, _lastOperator, _lastOperand);
+                
+                if (double.IsNaN(result) || double.IsInfinity(result))
+                {
+                    UpdateDisplay("Ошибка");
+                    _isNewEntry = true;
+                    _justCalculated = false;
+                    return;
+                }
+                
+                UpdateDisplay(FormatNumber(result));
+                _isNewEntry = true;
+            }
+            else if (!string.IsNullOrEmpty(_currentOperator))
             {
                 _currentValue = double.TryParse(DisplayLabel.Text, out double val) ? val : 0;
+                
+                // Сохраняем операцию и операнд для повторения
+                _lastOperator = _currentOperator;
+                _lastOperand = _currentValue;
+                
                 _expression = FormatNumber(_storedValue) + " " + _currentOperator + " " + FormatNumber(_currentValue) + " =";
                 UpdateExpression(_expression);
                 
-                PerformCalculation();
+                // Выполняем вычисление
+                double result = CalculateResult(_storedValue, _currentOperator, _currentValue);
+                
+                if (double.IsNaN(result) || double.IsInfinity(result))
+                {
+                    UpdateDisplay("Ошибка");
+                    _isNewEntry = true;
+                    _currentOperator = "";
+                    _justCalculated = false;
+                    return;
+                }
+                
+                _storedValue = result;
+                UpdateDisplay(FormatNumber(result));
                 _currentOperator = "";
+                _isNewEntry = true;
+                _justCalculated = true;
             }
+        }
+
+        private static double CalculateResult(double left, string op, double right)
+        {
+            return op switch
+            {
+                "+" => left + right,
+                "−" => left - right,
+                "×" => left * right,
+                "÷" => right != 0 ? left / right : double.NaN,
+                _ => right
+            };
         }
 
         private void PerformCalculation()
         {
             _currentValue = double.TryParse(DisplayLabel.Text, out double val) ? val : 0;
             
-            double result = _currentOperator switch
-            {
-                "+" => _storedValue + _currentValue,
-                "−" => _storedValue - _currentValue,
-                "×" => _storedValue * _currentValue,
-                "÷" => _currentValue != 0 ? _storedValue / _currentValue : double.NaN,
-                _ => _currentValue
-            };
+            double result = CalculateResult(_storedValue, _currentOperator, _currentValue);
             
             if (double.IsNaN(result) || double.IsInfinity(result))
             {
@@ -130,6 +183,9 @@
             _currentOperator = "";
             _isNewEntry = true;
             _expression = "";
+            _lastOperator = "";
+            _lastOperand = 0;
+            _justCalculated = false;
             UpdateDisplay("0");
             UpdateExpression("");
         }
