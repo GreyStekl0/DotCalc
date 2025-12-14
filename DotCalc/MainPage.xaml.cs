@@ -289,6 +289,17 @@ namespace DotCalc
             }
         }
 
+        private void OnMemoryItemTapped(object? sender, TappedEventArgs e)
+        {
+            if (e.Parameter is not MemoryItem item)
+            {
+                return;
+            }
+
+            UpdateDisplay(item.DisplayValue);
+            _isNewEntry = true;
+        }
+
         private void OnMemoryItemPointerExited(object? sender, PointerEventArgs e)
         {
             if (sender is Grid grid && grid.BindingContext is MemoryItem item)

@@ -263,20 +263,21 @@
                     <CollectionView x:Name="MemoryCollectionView"
                                     ItemsSource="{Binding MemoryList}"
                                     SelectionMode="None">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Padding="12,8">
-                                    <Grid.GestureRecognizers>
-                                        <PointerGestureRecognizer PointerEntered="OnMemoryItemPointerEntered"
-                                                                  PointerExited="OnMemoryItemPointerExited"/>
-                                    </Grid.GestureRecognizers>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    
-                                    <!-- Memory Value -->
-                                    <Label Grid.Row="0"
+                         <CollectionView.ItemTemplate>
+                             <DataTemplate>
+                                 <Grid Padding="12,8">
+                                     <Grid.GestureRecognizers>
+                                         <PointerGestureRecognizer PointerEntered="OnMemoryItemPointerEntered"
+                                                                   PointerExited="OnMemoryItemPointerExited"/>
+                                         <TapGestureRecognizer Tapped="OnMemoryItemTapped" CommandParameter="{Binding .}"/>
+                                     </Grid.GestureRecognizers>
+                                     <Grid.RowDefinitions>
+                                         <RowDefinition Height="Auto"/>
+                                         <RowDefinition Height="Auto"/>
+                                     </Grid.RowDefinitions>
+                                     
+                                     <!-- Memory Value -->
+                                     <Label Grid.Row="0"
                                            Text="{Binding DisplayValue}"
                                            TextColor="#1E1E1E"
                                            FontSize="20"
