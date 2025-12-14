@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using DotCalc.Services;
 
 namespace DotCalc.Models
 {
@@ -9,7 +10,7 @@ namespace DotCalc.Models
         private bool _isHovered;
 
         /// <summary>
-        /// ID записи в базе данных
+        /// ID СЌР»РµРјРµРЅС‚Р° РІ Р±Р°Р·Рµ РґР°РЅРЅС‹С….
         /// </summary>
         public int DatabaseId { get; set; }
 
@@ -27,7 +28,7 @@ namespace DotCalc.Models
             }
         }
 
-        public string DisplayValue => FormatNumber(Value);
+        public string DisplayValue => NumberFormatter.FormatNumber(Value);
 
         public bool IsHovered
         {
@@ -47,16 +48,6 @@ namespace DotCalc.Models
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        private static string FormatNumber(double value)
-        {
-            if (value == Math.Floor(value) && Math.Abs(value) < 1e15)
-            {
-                return value.ToString("0");
-            }
-            return value.ToString("G15").TrimEnd('0').TrimEnd(
-                System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator[0]);
         }
     }
 }

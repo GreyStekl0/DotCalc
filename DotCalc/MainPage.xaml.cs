@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using DotCalc.Data;
 using DotCalc.Models;
+using DotCalc.Services;
 
 namespace DotCalc
 {
@@ -166,7 +167,7 @@ namespace DotCalc
                 _currentValue = double.TryParse(DisplayLabel.Text, out double val) ? val : 0;
                 _storedValue = _currentValue;
                 _currentOperator = op;
-                _expression = FormatNumber(_storedValue) + " " + op;
+                _expression = NumberFormatter.FormatNumber(_storedValue) + " " + op;
                 UpdateExpression(_expression);
                 _isNewEntry = true;
                 _justCalculated = false;
@@ -180,7 +181,7 @@ namespace DotCalc
                 // Повторяем последнюю операцию: результат становится первым операндом
                 _storedValue = double.TryParse(DisplayLabel.Text, out double val) ? val : 0;
                 
-                _expression = FormatNumber(_storedValue) + " " + _lastOperator + " " + FormatNumber(_lastOperand) + " =";
+                _expression = NumberFormatter.FormatNumber(_storedValue) + " " + _lastOperator + " " + NumberFormatter.FormatNumber(_lastOperand) + " =";
                 UpdateExpression(_expression);
                 
                 // Выполняем вычисление с сохранённым операндом
@@ -194,7 +195,7 @@ namespace DotCalc
                     return;
                 }
                 
-                string resultStr = FormatNumber(result);
+                string resultStr = NumberFormatter.FormatNumber(result);
                 UpdateDisplay(resultStr);
                 
                 // Добавляем в историю
@@ -210,7 +211,7 @@ namespace DotCalc
                 _lastOperator = _currentOperator;
                 _lastOperand = _currentValue;
                 
-                _expression = FormatNumber(_storedValue) + " " + _currentOperator + " " + FormatNumber(_currentValue) + " =";
+                _expression = NumberFormatter.FormatNumber(_storedValue) + " " + _currentOperator + " " + NumberFormatter.FormatNumber(_currentValue) + " =";
                 UpdateExpression(_expression);
                 
                 // Выполняем вычисление
@@ -226,7 +227,7 @@ namespace DotCalc
                 }
                 
                 _storedValue = result;
-                string resultStr = FormatNumber(result);
+                string resultStr = NumberFormatter.FormatNumber(result);
                 UpdateDisplay(resultStr);
                 
                 // Добавляем в историю
@@ -264,23 +265,6 @@ namespace DotCalc
                 _isNewEntry = true;
                 _currentOperator = "";
                 _justCalculated = false;
-                
-                // Сбрасываем выделение
-                if (sender is CollectionView collectionView)
-                {
-                    collectionView.SelectedItem = null;
-                }
-            }
-        }
-
-        private void OnMemoryItemSelected(object? sender, SelectionChangedEventArgs e)
-        {
-            // Больше не используется для hover, но оставим для выбора значения по клику
-            if (e.CurrentSelection.FirstOrDefault() is MemoryItem selectedItem)
-            {
-                // Устанавливаем значение на дисплей
-                UpdateDisplay(selectedItem.DisplayValue);
-                _isNewEntry = true;
                 
                 // Сбрасываем выделение
                 if (sender is CollectionView collectionView)
@@ -349,7 +333,7 @@ namespace DotCalc
             }
             
             _storedValue = result;
-            UpdateDisplay(FormatNumber(result));
+            UpdateDisplay(NumberFormatter.FormatNumber(result));
             _isNewEntry = true;
         }
 
@@ -395,7 +379,7 @@ namespace DotCalc
             if (double.TryParse(DisplayLabel.Text, out double value) && value != 0)
             {
                 value = -value;
-                UpdateDisplay(FormatNumber(value));
+                UpdateDisplay(NumberFormatter.FormatNumber(value));
             }
         }
 
@@ -411,7 +395,7 @@ namespace DotCalc
                 {
                     value = value / 100;
                 }
-                UpdateDisplay(FormatNumber(value));
+                UpdateDisplay(NumberFormatter.FormatNumber(value));
                 _isNewEntry = true;
             }
         }
@@ -420,11 +404,11 @@ namespace DotCalc
         {
             if (double.TryParse(DisplayLabel.Text, out double value))
             {
-                string originalValue = FormatNumber(value);
+                string originalValue = NumberFormatter.FormatNumber(value);
                 double result = value * value;
                 _expression = $"sqr({originalValue})";
                 UpdateExpression(_expression);
-                UpdateDisplay(FormatNumber(result));
+                UpdateDisplay(NumberFormatter.FormatNumber(result));
                 _isNewEntry = true;
             }
         }
@@ -440,11 +424,11 @@ namespace DotCalc
                     return;
                 }
                 
-                string originalValue = FormatNumber(value);
+                string originalValue = NumberFormatter.FormatNumber(value);
                 double result = Math.Sqrt(value);
                 _expression = $"√({originalValue})";
                 UpdateExpression(_expression);
-                UpdateDisplay(FormatNumber(result));
+                UpdateDisplay(NumberFormatter.FormatNumber(result));
                 _isNewEntry = true;
             }
         }
@@ -460,11 +444,11 @@ namespace DotCalc
                     return;
                 }
                 
-                string originalValue = FormatNumber(value);
+                string originalValue = NumberFormatter.FormatNumber(value);
                 double result = 1 / value;
                 _expression = $"1/({originalValue})";
                 UpdateExpression(_expression);
-                UpdateDisplay(FormatNumber(result));
+                UpdateDisplay(NumberFormatter.FormatNumber(result));
                 _isNewEntry = true;
             }
         }
@@ -555,12 +539,7 @@ namespace DotCalc
         private async Task AddMemoryItemAsync(double value)
         {
             // Сдвигаем порядок существующих элементов
-            var allEntities = await _memoryDb.GetAllAsync();
-            foreach (var entity in allEntities)
-            {
-                entity.Order++;
-                await _memoryDb.UpdateAsync(entity);
-            }
+            await _memoryDb.IncrementOrderForAllAsync();
 
             // Создаём новую запись в БД
             var newEntity = new MemoryItemEntity
@@ -581,22 +560,14 @@ namespace DotCalc
 
         private async Task UpdateMemoryItemInDatabaseAsync(MemoryItem item)
         {
-            var entity = new MemoryItemEntity
+            var existingEntity = await _memoryDb.GetByIdAsync(item.DatabaseId);
+            if (existingEntity is null)
             {
-                Id = item.DatabaseId,
-                Value = item.Value
-            };
-            
-            // Получаем существующую запись для сохранения Order
-            var allEntities = await _memoryDb.GetAllAsync();
-            var existingEntity = allEntities.FirstOrDefault(e => e.Id == item.DatabaseId);
-            if (existingEntity != null)
-            {
-                entity.Order = existingEntity.Order;
-                entity.CreatedAt = existingEntity.CreatedAt;
+                return;
             }
-            
-            await _memoryDb.UpdateAsync(entity);
+
+            existingEntity.Value = item.Value;
+            await _memoryDb.UpdateAsync(existingEntity);
         }
 
         // Memory Item Actions (для кнопок на отдельных элементах памяти)
@@ -674,14 +645,5 @@ namespace DotCalc
             return null;
         }
 
-        private static string FormatNumber(double value)
-        {
-            if (value == Math.Floor(value) && Math.Abs(value) < 1e15)
-            {
-                return value.ToString("0");
-            }
-            return value.ToString("G15").TrimEnd('0').TrimEnd(
-                System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator[0]);
-        }
     }
 }

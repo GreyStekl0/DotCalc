@@ -3,7 +3,7 @@ using SQLite;
 namespace DotCalc.Data
 {
     /// <summary>
-    /// Сущность для хранения элемента памяти в БД
+    /// РЎСѓС‰РЅРѕСЃС‚СЊ РґР»СЏ С…СЂР°РЅРµРЅРёСЏ СЌР»РµРјРµРЅС‚Р° РїР°РјСЏС‚Рё РІ Р‘Р”
     /// </summary>
     public class MemoryItemEntity
     {
@@ -13,7 +13,7 @@ namespace DotCalc.Data
         public double Value { get; set; }
         
         /// <summary>
-        /// Порядок элемента (для сохранения порядка в списке)
+        /// РџРѕСЂСЏРґРѕРє СЌР»РµРјРµРЅС‚Р° (РґР»СЏ СЃРѕС…СЂР°РЅРµРЅРёСЏ РїРѕСЂСЏРґРєР° РІ СЃРїРёСЃРєРµ)
         /// </summary>
         public int Order { get; set; }
         

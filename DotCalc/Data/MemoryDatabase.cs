@@ -5,73 +5,155 @@ namespace DotCalc.Data
     public class MemoryDatabase
     {
         private SQLiteAsyncConnection? _database;
+        private readonly SemaphoreSlim _mutex = new(1, 1);
 
-        private async Task InitAsync()
+        private async Task<SQLiteAsyncConnection> GetDatabaseLockedAsync()
         {
             if (_database is not null)
-                return;
+            {
+                return _database;
+            }
 
             _database = new SQLiteAsyncConnection(DatabaseConstants.DatabasePath, DatabaseConstants.Flags);
             await _database.CreateTableAsync<MemoryItemEntity>();
+            return _database;
         }
 
         /// <summary>
-        /// Получить все элементы памяти, отсортированные по порядку
+        /// РџРѕР»СѓС‡РёС‚СЊ РІСЃРµ СЌР»РµРјРµРЅС‚С‹ РїР°РјСЏС‚Рё, РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°РЅРЅС‹Рµ РїРѕ РїРѕСЂСЏРґРєСѓ
         /// </summary>
         public async Task<List<MemoryItemEntity>> GetAllAsync()
         {
-            await InitAsync();
-            return await _database!.Table<MemoryItemEntity>()
-                .OrderBy(x => x.Order)
-                .ToListAsync();
+            await _mutex.WaitAsync();
+            try
+            {
+                var database = await GetDatabaseLockedAsync();
+                return await database.Table<MemoryItemEntity>()
+                    .OrderBy(x => x.Order)
+                    .ToListAsync();
+            }
+            finally
+            {
+                _mutex.Release();
+            }
+        }
+
+        public async Task<MemoryItemEntity?> GetByIdAsync(int id)
+        {
+            await _mutex.WaitAsync();
+            try
+            {
+                var database = await GetDatabaseLockedAsync();
+                return await database.Table<MemoryItemEntity>()
+                    .Where(x => x.Id == id)
+                    .FirstOrDefaultAsync();
+            }
+            finally
+            {
+                _mutex.Release();
+            }
+        }
+
+        public async Task<int> IncrementOrderForAllAsync()
+        {
+            await _mutex.WaitAsync();
+            try
+            {
+                var database = await GetDatabaseLockedAsync();
+                return await database.ExecuteAsync("UPDATE MemoryItemEntity SET \"Order\" = \"Order\" + 1");
+            }
+            finally
+            {
+                _mutex.Release();
+            }
         }
 
         /// <summary>
-        /// Сохранить новый элемент памяти
+        /// РЎРѕС…СЂР°РЅРёС‚СЊ РЅРѕРІС‹Р№ СЌР»РµРјРµРЅС‚ РїР°РјСЏС‚Рё
         /// </summary>
         public async Task<int> InsertAsync(MemoryItemEntity item)
         {
-            await InitAsync();
-            return await _database!.InsertAsync(item);
+            await _mutex.WaitAsync();
+            try
+            {
+                var database = await GetDatabaseLockedAsync();
+                return await database.InsertAsync(item);
+            }
+            finally
+            {
+                _mutex.Release();
+            }
         }
 
         /// <summary>
-        /// Обновить существующий элемент памяти
+        /// РћР±РЅРѕРІРёС‚СЊ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ СЌР»РµРјРµРЅС‚ РїР°РјСЏС‚Рё
         /// </summary>
         public async Task<int> UpdateAsync(MemoryItemEntity item)
         {
-            await InitAsync();
-            return await _database!.UpdateAsync(item);
+            await _mutex.WaitAsync();
+            try
+            {
+                var database = await GetDatabaseLockedAsync();
+                return await database.UpdateAsync(item);
+            }
+            finally
+            {
+                _mutex.Release();
+            }
         }
 
         /// <summary>
-        /// Удалить элемент памяти
+        /// РЈРґР°Р»РёС‚СЊ СЌР»РµРјРµРЅС‚ РїР°РјСЏС‚Рё
         /// </summary>
         public async Task<int> DeleteAsync(MemoryItemEntity item)
         {
-            await InitAsync();
-            return await _database!.DeleteAsync(item);
+            await _mutex.WaitAsync();
+            try
+            {
+                var database = await GetDatabaseLockedAsync();
+                return await database.DeleteAsync(item);
+            }
+            finally
+            {
+                _mutex.Release();
+            }
         }
 
         /// <summary>
-        /// Удалить все элементы памяти
+        /// РЈРґР°Р»РёС‚СЊ РІСЃРµ СЌР»РµРјРµРЅС‚С‹ РїР°РјСЏС‚Рё
         /// </summary>
         public async Task<int> DeleteAllAsync()
         {
-            await InitAsync();
-            return await _database!.DeleteAllAsync<MemoryItemEntity>();
+            await _mutex.WaitAsync();
+            try
+            {
+                var database = await GetDatabaseLockedAsync();
+                return await database.DeleteAllAsync<MemoryItemEntity>();
+            }
+            finally
+            {
+                _mutex.Release();
+            }
         }
 
         /// <summary>
-        /// Пересчитать порядок всех элементов
+        /// РџРµСЂРµСЃС‡РёС‚Р°С‚СЊ РїРѕСЂСЏРґРѕРє РІСЃРµС… СЌР»РµРјРµРЅС‚РѕРІ
         /// </summary>
         public async Task ReorderAsync(List<MemoryItemEntity> items)
         {
-            await InitAsync();
-            for (int i = 0; i < items.Count; i++)
+            await _mutex.WaitAsync();
+            try
             {
-                items[i].Order = i;
-                await _database!.UpdateAsync(items[i]);
+                var database = await GetDatabaseLockedAsync();
+                for (int i = 0; i < items.Count; i++)
+                {
+                    items[i].Order = i;
+                    await database.UpdateAsync(items[i]);
+                }
+            }
+            finally
+            {
+                _mutex.Release();
             }
         }
     }
