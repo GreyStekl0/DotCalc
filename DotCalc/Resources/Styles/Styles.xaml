@@ -3,25 +3,32 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
+    <!-- Глобальные стили приложения (переопределяют дефолтные стили MAUI). -->
+
+    <!-- ActivityIndicator: цвет спиннера зависит от темы. -->
     <Style TargetType="ActivityIndicator">
         <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
     </Style>
 
+    <!-- IndicatorView: цвета индикаторов/выбранного индикатора. -->
     <Style TargetType="IndicatorView">
         <Setter Property="IndicatorColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}"/>
         <Setter Property="SelectedIndicatorColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray100}}"/>
     </Style>
 
+    <!-- Border: базовый вид рамки (цвет/толщина/форма). -->
     <Style TargetType="Border">
         <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray500}}" />
         <Setter Property="StrokeShape" Value="Rectangle"/>
         <Setter Property="StrokeThickness" Value="1"/>
     </Style>
 
+    <!-- BoxView: дефолтный цвет заливки (используется как разделитель/полоса и т.п.). -->
     <Style TargetType="BoxView">
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
     </Style>
 
+    <!-- Button: базовая кнопка (цвета/шрифты/радиус) + состояния (Disabled/PointerOver). -->
     <Style TargetType="Button">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
@@ -48,6 +55,7 @@
         </Setter>
     </Style>
 
+    <!-- CheckBox: базовый цвет и состояния. -->
     <Style TargetType="CheckBox">
         <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
         <Setter Property="MinimumHeightRequest" Value="44"/>
@@ -66,6 +74,7 @@
         </Setter>
     </Style>
 
+    <!-- DatePicker: цвет текста/плейсхолдера и шрифт. -->
     <Style TargetType="DatePicker">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
@@ -87,6 +96,7 @@
         </Setter>
     </Style>
 
+    <!-- Editor: многострочное поле ввода. -->
     <Style TargetType="Editor">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
@@ -109,6 +119,7 @@
         </Setter>
     </Style>
 
+    <!-- Entry: однострочное поле ввода. -->
     <Style TargetType="Entry">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
@@ -131,6 +142,7 @@
         </Setter>
     </Style>
 
+    <!-- ImageButton: кнопка-иконка (opacity/состояния). -->
     <Style TargetType="ImageButton">
         <Setter Property="Opacity" Value="1" />
         <Setter Property="BorderColor" Value="Transparent"/>
@@ -153,6 +165,7 @@
         </Setter>
     </Style>
 
+    <!-- Label: базовый текст (цвет/шрифт) + состояние Disabled. -->
     <Style TargetType="Label">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
@@ -172,6 +185,7 @@
         </Setter>
     </Style>
 
+    <!-- Headline: крупный заголовок (используется по ключу). -->
     <Style TargetType="Label" x:Key="Headline">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MidnightBlue}, Dark={StaticResource White}}" />
         <Setter Property="FontSize" Value="32" />
@@ -179,6 +193,7 @@
         <Setter Property="HorizontalTextAlignment" Value="Center" />
     </Style>
 
+    <!-- SubHeadline: подзаголовок (используется по ключу). -->
     <Style TargetType="Label" x:Key="SubHeadline">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MidnightBlue}, Dark={StaticResource White}}" />
         <Setter Property="FontSize" Value="24" />
@@ -186,6 +201,7 @@
         <Setter Property="HorizontalTextAlignment" Value="Center" />
     </Style>
 
+    <!-- Picker: выпадающий список (цвета/шрифт/состояния). -->
     <Style TargetType="Picker">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
         <Setter Property="TitleColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
@@ -209,6 +225,7 @@
         </Setter>
     </Style>
 
+    <!-- ProgressBar: цвета прогресса по теме. -->
     <Style TargetType="ProgressBar">
         <Setter Property="ProgressColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
         <Setter Property="VisualStateManager.VisualStateGroups">
@@ -225,6 +242,7 @@
         </Setter>
     </Style>
 
+    <!-- RadioButton: базовый вид (цвет текста/шрифт) + Disabled. -->
     <Style TargetType="RadioButton">
         <Setter Property="BackgroundColor" Value="Transparent"/>
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
@@ -246,10 +264,12 @@
         </Setter>
     </Style>
 
+    <!-- RefreshView: цвет индикатора обновления. -->
     <Style TargetType="RefreshView">
         <Setter Property="RefreshColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
     </Style>
 
+    <!-- SearchBar: строка поиска (цвет текста/плейсхолдера) + Disabled. -->
     <Style TargetType="SearchBar">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
         <Setter Property="PlaceholderColor" Value="{StaticResource Gray500}" />
@@ -274,6 +294,7 @@
         </Setter>
     </Style>
 
+    <!-- SearchHandler: поисковый обработчик для Shell (цвета/шрифт). -->
     <Style TargetType="SearchHandler">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
         <Setter Property="PlaceholderColor" Value="{StaticResource Gray500}" />
@@ -295,6 +316,7 @@
         </Setter>
     </Style>
 
+    <!-- Shadow: дефолтная тень для элементов. -->
     <Style TargetType="Shadow">
         <Setter Property="Radius" Value="15" />
         <Setter Property="Opacity" Value="0.5" />
@@ -302,6 +324,7 @@
         <Setter Property="Offset" Value="10,10" />
     </Style>
 
+    <!-- Slider: цвета дорожки/ползунка + Disabled. -->
     <Style TargetType="Slider">
         <Setter Property="MinimumTrackColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
         <Setter Property="MaximumTrackColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}" />
@@ -322,10 +345,12 @@
         </Setter>
     </Style>
 
+    <!-- SwipeItem: цвет фона для свайп-элементов. -->
     <Style TargetType="SwipeItem">
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
     </Style>
 
+    <!-- Switch: цвета переключателя + состояния (On/Off/Disabled). -->
     <Style TargetType="Switch">
         <Setter Property="OnColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
         <Setter Property="ThumbColor" Value="{StaticResource White}" />
@@ -355,6 +380,7 @@
         </Setter>
     </Style>
 
+    <!-- TimePicker: выбор времени (цвета/шрифт) + Disabled. -->
     <Style TargetType="TimePicker">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
         <Setter Property="BackgroundColor" Value="Transparent"/>
@@ -376,6 +402,7 @@
         </Setter>
     </Style>
   
+    <!-- Пример стиля TitleBar оставлен как шаблон (сейчас закомментирован). -->
     <!--
     <Style TargetType="TitleBar">
         <Setter Property="MinimumHeightRequest" Value="32"/>
@@ -400,11 +427,13 @@
     </Style>
     -->
 
+    <!-- Page: общий фон страниц (с учетом темы). -->
     <Style TargetType="Page" ApplyToDerivedTypes="True">
         <Setter Property="Padding" Value="0"/>
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource OffBlack}}" />
     </Style>
 
+    <!-- Shell: цвета навигации/таббара и текста. -->
     <Style TargetType="Shell" ApplyToDerivedTypes="True">
         <Setter Property="Shell.BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource OffBlack}}" />
         <Setter Property="Shell.ForegroundColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource SecondaryDarkText}}" />
@@ -418,12 +447,14 @@
         <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
     </Style>
 
+    <!-- NavigationPage: цвета верхней панели навигации. -->
     <Style TargetType="NavigationPage">
         <Setter Property="BarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource OffBlack}}" />
         <Setter Property="BarTextColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource White}}" />
         <Setter Property="IconColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource White}}" />
     </Style>
 
+    <!-- TabbedPage: цвета табов/невыбранных табов. -->
     <Style TargetType="TabbedPage">
         <Setter Property="BarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray950}}" />
         <Setter Property="BarTextColor" Value="{AppThemeBinding Light={StaticResource Magenta}, Dark={StaticResource White}}" />

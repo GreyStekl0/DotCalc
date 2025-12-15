@@ -5,4 +5,6 @@
     xmlns:maui="using:Microsoft.Maui"
     xmlns:local="using:DotCalc.WinUI">
 
+    <!-- WinUI-хост для MAUI. Здесь можно подключать WinUI-ресурсы при необходимости. -->
+
 </maui:MauiWinUIApplication>

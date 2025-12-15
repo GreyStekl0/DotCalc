@@ -1,6 +1,9 @@
 ﻿namespace DotCalc
 {
-    public partial class AppShell : Shell
+    /// <summary>
+    /// Корневой Shell: отвечает за маршруты и навигацию приложения.
+    /// </summary>
+    public partial class AppShell
     {
         public AppShell()
         {

@@ -5,11 +5,10 @@ namespace DotCalc
 {
     public class Program
     {
-        // This is the main entry point of the application.
+        // Главная точка входа MacCatalyst-приложения.
         static void Main(string[] args)
         {
-            // if you want to use a different Application Delegate class from "AppDelegate"
-            // you can specify it here.
+            // Если нужно использовать другой AppDelegate, его можно указать здесь вместо AppDelegate.
             UIApplication.Main(args, null, typeof(AppDelegate));
         }
     }

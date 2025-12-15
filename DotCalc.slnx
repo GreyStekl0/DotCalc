@@ -1,3 +1,6 @@
 <Solution>
+  <!-- Решение включает: MAUI-приложение, общую библиотеку логики и набор тестов. -->
   <Project Path="DotCalc/DotCalc.csproj" />
+  <Project Path="DotCalc.Core/DotCalc.Core.csproj" />
+  <Project Path="DotCalc.Tests/DotCalc.Tests.csproj" />
 </Solution>

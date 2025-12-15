@@ -6,6 +6,7 @@
     xmlns:local="clr-namespace:DotCalc"
     Title="DotCalc">
 
+    <!--  Главный экран приложения.  -->
     <ShellContent
         Title="Home"
         ContentTemplate="{DataTemplate local:MainPage}"

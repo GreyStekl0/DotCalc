@@ -5,45 +5,51 @@ using DotCalc.Services;
 
 namespace DotCalc
 {
-    public partial class MainPage : ContentPage
+    /// <summary>
+    /// Главная страница приложения: калькулятор + панель "Журнал/Память".
+    /// </summary>
+    /// <remarks>
+    /// UI построен на XAML, а логика вычислений вынесена в <see cref="CalculatorEngine"/>.
+    /// "Память" хранится в SQLite через <see cref="MemoryDatabase"/>.
+    /// </remarks>
+    public partial class MainPage
     {
-        private double _currentValue = 0;
-        private double _storedValue = 0;
-        private string _currentOperator = "";
-        private bool _isNewEntry = true;
-        private string _expression = "";
-        
-        // Для повторения последней операции при нажатии =
-        private string _lastOperator = "";
-        private double _lastOperand = 0;
-        private bool _justCalculated = false;
+        // Движок калькулятора (чистая логика без привязки к UI).
+        private readonly CalculatorEngine _calculator = new();
 
-        // История вычислений
-        public ObservableCollection<HistoryItem> History { get; } = [];
+        /// <summary>
+        /// История вычислений (используется как ItemsSource для списка "Журнал").
+        /// </summary>
+        public ObservableCollection<HistoryItem> History => _calculator.History;
         
-        // Память (список значений)
+        /// <summary>
+        /// Список значений "памяти" (используется как ItemsSource для списка "Память").
+        /// </summary>
         public ObservableCollection<MemoryItem> MemoryList { get; } = [];
         
         // Текущий активный элемент памяти (для hover эффекта)
         private MemoryItem? _currentHoveredMemoryItem;
         
-        // База данных для памяти
-        private readonly MemoryDatabase _memoryDb = new();
+        // База данных для "памяти" (SQLite файл лежит в AppData).
+        private readonly MemoryDatabase _memoryDb = new(DatabaseConstants.DatabasePath, DatabaseConstants.Flags);
         
         public MainPage()
         {
             InitializeComponent();
             BindingContext = this;
+            SyncCalculatorToUi();
             
             // Загружаем память из БД при запуске
             Loaded += OnPageLoaded;
         }
 
+        // Событие Loaded удобно тем, что страница уже создана, и можно безопасно трогать UI/привязки.
         private async void OnPageLoaded(object? sender, EventArgs e)
         {
             await LoadMemoryFromDatabaseAsync();
         }
 
+        // Считываем сохраненную память из SQLite и наполняем ObservableCollection для UI.
         private async Task LoadMemoryFromDatabaseAsync()
         {
             try
@@ -62,21 +68,19 @@ namespace DotCalc
             }
             catch (Exception ex)
             {
+                // Не падаем из-за БД: приложение должно продолжать работать.
                 System.Diagnostics.Debug.WriteLine($"Error loading memory: {ex.Message}");
             }
         }
 
-        private void UpdateDisplay(string value)
+        // Простой "мост" между движком и элементами UI (Label'ами).
+        private void SyncCalculatorToUi()
         {
-            DisplayLabel.Text = value;
+            DisplayLabel.Text = _calculator.DisplayText;
+            ExpressionLabel.Text = _calculator.ExpressionText;
         }
 
-        private void UpdateExpression(string expression)
-        {
-            ExpressionLabel.Text = expression;
-        }
-
-        // Tab switching
+        // Переключение вкладок "Журнал" / "Память".
         private void OnHistoryTabClicked(object? sender, EventArgs e)
         {
             HistoryContent.IsVisible = true;
@@ -101,6 +105,7 @@ namespace DotCalc
             ClearPanelButton.Text = "🗑 Очистить память";
         }
 
+        // Одна кнопка "очистить" для обеих вкладок: действие зависит от активной панели.
         private async void OnClearPanel(object? sender, EventArgs e)
         {
             if (HistoryContent.IsVisible)
@@ -113,182 +118,65 @@ namespace DotCalc
             }
         }
 
+        // Цифры.
         private void OnDigit(object? sender, EventArgs e)
         {
-            if (sender is Button button)
-            {
-                string digit = button.Text;
-                
-                if (_isNewEntry)
-                {
-                    DisplayLabel.Text = digit;
-                    _isNewEntry = false;
-                }
-                else
-                {
-                    if (DisplayLabel.Text == "0" && digit != "0")
-                    {
-                        DisplayLabel.Text = digit;
-                    }
-                    else if (DisplayLabel.Text != "0")
-                    {
-                        DisplayLabel.Text += digit;
-                    }
-                }
-            }
+            if (sender is not Button button) return;
+            _calculator.Digit(button.Text);
+            SyncCalculatorToUi();
         }
 
+        // Десятичный разделитель.
         private void OnDecimal(object? sender, EventArgs e)
         {
-            string separator = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
-            
-            if (_isNewEntry)
-            {
-                DisplayLabel.Text = "0" + separator;
-                _isNewEntry = false;
-            }
-            else if (!DisplayLabel.Text.Contains(separator))
-            {
-                DisplayLabel.Text += separator;
-            }
+            _calculator.Decimal();
+            SyncCalculatorToUi();
         }
 
+        // Операторы +, −, ×, ÷.
         private void OnOperator(object? sender, EventArgs e)
         {
-            if (sender is Button button)
-            {
-                string op = button.Text;
-                
-                if (!_isNewEntry && !string.IsNullOrEmpty(_currentOperator))
-                {
-                    PerformCalculation();
-                }
-                
-                _currentValue = double.TryParse(DisplayLabel.Text, out double val) ? val : 0;
-                _storedValue = _currentValue;
-                _currentOperator = op;
-                _expression = NumberFormatter.FormatNumber(_storedValue) + " " + op;
-                UpdateExpression(_expression);
-                _isNewEntry = true;
-                _justCalculated = false;
-            }
+            if (sender is not Button button) return;
+            _calculator.Operator(button.Text);
+            SyncCalculatorToUi();
         }
 
+        // "=".
         private void OnEquals(object? sender, EventArgs e)
         {
-            if (_justCalculated && !string.IsNullOrEmpty(_lastOperator))
-            {
-                // Повторяем последнюю операцию: результат становится первым операндом
-                _storedValue = double.TryParse(DisplayLabel.Text, out double val) ? val : 0;
-                
-                _expression = NumberFormatter.FormatNumber(_storedValue) + " " + _lastOperator + " " + NumberFormatter.FormatNumber(_lastOperand) + " =";
-                UpdateExpression(_expression);
-                
-                // Выполняем вычисление с сохранённым операндом
-                double result = CalculateResult(_storedValue, _lastOperator, _lastOperand);
-                
-                if (double.IsNaN(result) || double.IsInfinity(result))
-                {
-                    UpdateDisplay("Ошибка");
-                    _isNewEntry = true;
-                    _justCalculated = false;
-                    return;
-                }
-                
-                string resultStr = NumberFormatter.FormatNumber(result);
-                UpdateDisplay(resultStr);
-                
-                // Добавляем в историю
-                AddToHistory(_expression, resultStr);
-                
-                _isNewEntry = true;
-            }
-            else if (!string.IsNullOrEmpty(_currentOperator))
-            {
-                _currentValue = double.TryParse(DisplayLabel.Text, out double val) ? val : 0;
-                
-                // Сохраняем операцию и операнд для повторения
-                _lastOperator = _currentOperator;
-                _lastOperand = _currentValue;
-                
-                _expression = NumberFormatter.FormatNumber(_storedValue) + " " + _currentOperator + " " + NumberFormatter.FormatNumber(_currentValue) + " =";
-                UpdateExpression(_expression);
-                
-                // Выполняем вычисление
-                double result = CalculateResult(_storedValue, _currentOperator, _currentValue);
-                
-                if (double.IsNaN(result) || double.IsInfinity(result))
-                {
-                    UpdateDisplay("Ошибка");
-                    _isNewEntry = true;
-                    _currentOperator = "";
-                    _justCalculated = false;
-                    return;
-                }
-                
-                _storedValue = result;
-                string resultStr = NumberFormatter.FormatNumber(result);
-                UpdateDisplay(resultStr);
-                
-                // Добавляем в историю
-                AddToHistory(_expression, resultStr);
-                
-                _currentOperator = "";
-                _isNewEntry = true;
-                _justCalculated = true;
-            }
+            _calculator.Equals();
+            SyncCalculatorToUi();
         }
 
-        private void AddToHistory(string expression, string result)
-        {
-            History.Insert(0, new HistoryItem
-            {
-                Expression = expression,
-                Result = result
-            });
-        }
-
+        // Выбор строки истории: переносим выражение/результат на дисплей.
         private void OnHistoryItemSelected(object? sender, SelectionChangedEventArgs e)
         {
-            if (e.CurrentSelection.FirstOrDefault() is HistoryItem selectedItem)
+            if (e.CurrentSelection.FirstOrDefault() is not HistoryItem selectedItem) return;
+            _calculator.SelectHistoryItem(selectedItem);
+            SyncCalculatorToUi();
+                
+            // Сбрасываем выделение
+            if (sender is CollectionView collectionView)
             {
-                // Восстанавливаем выражение и результат
-                UpdateExpression(selectedItem.Expression);
-                UpdateDisplay(selectedItem.Result);
-                
-                // Пытаемся распарсить результат для дальнейших вычислений
-                if (double.TryParse(selectedItem.Result, out double result))
-                {
-                    _storedValue = result;
-                }
-                
-                _isNewEntry = true;
-                _currentOperator = "";
-                _justCalculated = false;
-                
-                // Сбрасываем выделение
-                if (sender is CollectionView collectionView)
-                {
-                    collectionView.SelectedItem = null;
-                }
+                collectionView.SelectedItem = null;
             }
         }
 
+        // Hover эффекты для элементов памяти (актуально для десктопа).
         private void OnMemoryItemPointerEntered(object? sender, PointerEventArgs e)
         {
-            if (sender is Grid grid && grid.BindingContext is MemoryItem item)
+            if (sender is not Grid { BindingContext: MemoryItem item }) return;
+            // Снимаем hover с предыдущего элемента
+            if (_currentHoveredMemoryItem != null && _currentHoveredMemoryItem != item)
             {
-                // Снимаем hover с предыдущего элемента
-                if (_currentHoveredMemoryItem != null && _currentHoveredMemoryItem != item)
-                {
-                    _currentHoveredMemoryItem.IsHovered = false;
-                }
-                
-                item.IsHovered = true;
-                _currentHoveredMemoryItem = item;
+                _currentHoveredMemoryItem.IsHovered = false;
             }
+                
+            item.IsHovered = true;
+            _currentHoveredMemoryItem = item;
         }
 
+        // Клик по элементу памяти: используем его значение как новый ввод калькулятора.
         private void OnMemoryItemTapped(object? sender, TappedEventArgs e)
         {
             if (e.Parameter is not MemoryItem item)
@@ -296,172 +184,80 @@ namespace DotCalc
                 return;
             }
 
-            UpdateDisplay(item.DisplayValue);
-            _isNewEntry = true;
+            _calculator.SetDisplayText(item.DisplayValue, isNewEntry: true);
+            SyncCalculatorToUi();
         }
 
+        // Убираем подсветку при уходе курсора.
         private void OnMemoryItemPointerExited(object? sender, PointerEventArgs e)
         {
-            if (sender is Grid grid && grid.BindingContext is MemoryItem item)
+            if (sender is not Grid grid || grid.BindingContext is not MemoryItem item) return;
+            item.IsHovered = false;
+            if (_currentHoveredMemoryItem == item)
             {
-                item.IsHovered = false;
-                if (_currentHoveredMemoryItem == item)
-                {
-                    _currentHoveredMemoryItem = null;
-                }
+                _currentHoveredMemoryItem = null;
             }
         }
 
         private void OnClearHistory(object? sender, EventArgs e)
         {
-            History.Clear();
+            _calculator.ClearHistory();
         }
 
-        private static double CalculateResult(double left, string op, double right)
-        {
-            return op switch
-            {
-                "+" => left + right,
-                "−" => left - right,
-                "×" => left * right,
-                "÷" => right != 0 ? left / right : double.NaN,
-                _ => right
-            };
-        }
-
-        private void PerformCalculation()
-        {
-            _currentValue = double.TryParse(DisplayLabel.Text, out double val) ? val : 0;
-            
-            double result = CalculateResult(_storedValue, _currentOperator, _currentValue);
-            
-            if (double.IsNaN(result) || double.IsInfinity(result))
-            {
-                UpdateDisplay("Ошибка");
-                _isNewEntry = true;
-                _currentOperator = "";
-                return;
-            }
-            
-            _storedValue = result;
-            UpdateDisplay(NumberFormatter.FormatNumber(result));
-            _isNewEntry = true;
-        }
-
+        // "C" — полный сброс.
         private void OnClear(object? sender, EventArgs e)
         {
-            _currentValue = 0;
-            _storedValue = 0;
-            _currentOperator = "";
-            _isNewEntry = true;
-            _expression = "";
-            _lastOperator = "";
-            _lastOperand = 0;
-            _justCalculated = false;
-            UpdateDisplay("0");
-            UpdateExpression("");
+            _calculator.Clear();
+            SyncCalculatorToUi();
         }
 
+        // "CE" — сброс только текущего ввода.
         private void OnClearEntry(object? sender, EventArgs e)
         {
-            UpdateDisplay("0");
-            _isNewEntry = true;
+            _calculator.ClearEntry();
+            SyncCalculatorToUi();
         }
 
+        // "⌫" — удалить последний символ.
         private void OnBackspace(object? sender, EventArgs e)
         {
-            if (!_isNewEntry && DisplayLabel.Text.Length > 0)
-            {
-                string current = DisplayLabel.Text;
-                if (current.Length == 1 || (current.Length == 2 && current.StartsWith("-")))
-                {
-                    UpdateDisplay("0");
-                    _isNewEntry = true;
-                }
-                else
-                {
-                    UpdateDisplay(current[..^1]);
-                }
-            }
+            _calculator.Backspace();
+            SyncCalculatorToUi();
         }
 
+        // "+/−" — смена знака.
         private void OnNegate(object? sender, EventArgs e)
         {
-            if (double.TryParse(DisplayLabel.Text, out double value) && value != 0)
-            {
-                value = -value;
-                UpdateDisplay(NumberFormatter.FormatNumber(value));
-            }
+            _calculator.Negate();
+            SyncCalculatorToUi();
         }
 
+        // "%" — проценты.
         private void OnPercent(object? sender, EventArgs e)
         {
-            if (double.TryParse(DisplayLabel.Text, out double value))
-            {
-                if (!string.IsNullOrEmpty(_currentOperator))
-                {
-                    value = _storedValue * (value / 100);
-                }
-                else
-                {
-                    value = value / 100;
-                }
-                UpdateDisplay(NumberFormatter.FormatNumber(value));
-                _isNewEntry = true;
-            }
+            _calculator.Percent();
+            SyncCalculatorToUi();
         }
 
+        // "x²" — квадрат.
         private void OnSquare(object? sender, EventArgs e)
         {
-            if (double.TryParse(DisplayLabel.Text, out double value))
-            {
-                string originalValue = NumberFormatter.FormatNumber(value);
-                double result = value * value;
-                _expression = $"sqr({originalValue})";
-                UpdateExpression(_expression);
-                UpdateDisplay(NumberFormatter.FormatNumber(result));
-                _isNewEntry = true;
-            }
+            _calculator.Square();
+            SyncCalculatorToUi();
         }
 
+        // "√x" — квадратный корень.
         private void OnSquareRoot(object? sender, EventArgs e)
         {
-            if (double.TryParse(DisplayLabel.Text, out double value))
-            {
-                if (value < 0)
-                {
-                    UpdateDisplay("Ошибка");
-                    _isNewEntry = true;
-                    return;
-                }
-                
-                string originalValue = NumberFormatter.FormatNumber(value);
-                double result = Math.Sqrt(value);
-                _expression = $"√({originalValue})";
-                UpdateExpression(_expression);
-                UpdateDisplay(NumberFormatter.FormatNumber(result));
-                _isNewEntry = true;
-            }
+            _calculator.SquareRoot();
+            SyncCalculatorToUi();
         }
 
+        // "1/x" — обратное значение.
         private void OnInverse(object? sender, EventArgs e)
         {
-            if (double.TryParse(DisplayLabel.Text, out double value))
-            {
-                if (value == 0)
-                {
-                    UpdateDisplay("Ошибка");
-                    _isNewEntry = true;
-                    return;
-                }
-                
-                string originalValue = NumberFormatter.FormatNumber(value);
-                double result = 1 / value;
-                _expression = $"1/({originalValue})";
-                UpdateExpression(_expression);
-                UpdateDisplay(NumberFormatter.FormatNumber(result));
-                _isNewEntry = true;
-            }
+            _calculator.Inverse();
+            SyncCalculatorToUi();
         }
 
         // Memory Functions - работа со списком памяти с сохранением в БД
@@ -486,12 +282,10 @@ namespace DotCalc
         /// </summary>
         private void OnMemoryRecall(object? sender, EventArgs e)
         {
-            if (MemoryList.Count > 0)
-            {
-                var lastItem = MemoryList[0];
-                UpdateDisplay(lastItem.DisplayValue);
-                _isNewEntry = true;
-            }
+            if (MemoryList.Count <= 0) return;
+            var lastItem = MemoryList[0];
+            _calculator.SetDisplayText(lastItem.DisplayValue, isNewEntry: true);
+            SyncCalculatorToUi();
         }
 
         /// <summary>
@@ -499,19 +293,17 @@ namespace DotCalc
         /// </summary>
         private async void OnMemoryAdd(object? sender, EventArgs e)
         {
-            if (double.TryParse(DisplayLabel.Text, out double value))
+            if (!double.TryParse(_calculator.DisplayText, out double value)) return;
+            if (MemoryList.Count > 0)
             {
-                if (MemoryList.Count > 0)
-                {
-                    var item = MemoryList[0];
-                    item.Value += value;
-                    await UpdateMemoryItemInDatabaseAsync(item);
-                }
-                else
-                {
-                    // Если память пуста, создаём новый элемент
-                    await AddMemoryItemAsync(value);
-                }
+                var item = MemoryList[0];
+                item.Value += value;
+                await UpdateMemoryItemInDatabaseAsync(item);
+            }
+            else
+            {
+                // Если память пуста, создаём новый элемент
+                await AddMemoryItemAsync(value);
             }
         }
 
@@ -520,19 +312,17 @@ namespace DotCalc
         /// </summary>
         private async void OnMemorySubtract(object? sender, EventArgs e)
         {
-            if (double.TryParse(DisplayLabel.Text, out double value))
+            if (!double.TryParse(_calculator.DisplayText, out double value)) return;
+            if (MemoryList.Count > 0)
             {
-                if (MemoryList.Count > 0)
-                {
-                    var item = MemoryList[0];
-                    item.Value -= value;
-                    await UpdateMemoryItemInDatabaseAsync(item);
-                }
-                else
-                {
-                    // Если память пуста, создаём новый элемент с отрицательным значением
-                    await AddMemoryItemAsync(-value);
-                }
+                var item = MemoryList[0];
+                item.Value -= value;
+                await UpdateMemoryItemInDatabaseAsync(item);
+            }
+            else
+            {
+                // Если память пуста, создаём новый элемент с отрицательным значением
+                await AddMemoryItemAsync(-value);
             }
         }
 
@@ -541,7 +331,7 @@ namespace DotCalc
         /// </summary>
         private async void OnMemoryStore(object? sender, EventArgs e)
         {
-            if (double.TryParse(DisplayLabel.Text, out double value))
+            if (double.TryParse(_calculator.DisplayText, out double value))
             {
                 await AddMemoryItemAsync(value);
             }
@@ -556,8 +346,7 @@ namespace DotCalc
             var newEntity = new MemoryItemEntity
             {
                 Value = value,
-                Order = 0,
-                CreatedAt = DateTime.Now
+                Order = 0
             };
             await _memoryDb.InsertAsync(newEntity);
 
@@ -569,6 +358,7 @@ namespace DotCalc
             });
         }
 
+        // Записываем изменения в БД для элемента, который уже существует.
         private async Task UpdateMemoryItemInDatabaseAsync(MemoryItem item)
         {
             var existingEntity = await _memoryDb.GetByIdAsync(item.DatabaseId);
@@ -588,13 +378,11 @@ namespace DotCalc
         /// </summary>
         private async void OnMemoryItemClear(object? sender, EventArgs e)
         {
-            if (sender is Button button)
+            if (sender is not Button button) return;
+            var item = GetMemoryItemFromButton(button);
+            if (item != null)
             {
-                var item = GetMemoryItemFromButton(button);
-                if (item != null)
-                {
-                    await DeleteMemoryItemAsync(item);
-                }
+                await DeleteMemoryItemAsync(item);
             }
         }
 
@@ -617,15 +405,11 @@ namespace DotCalc
         /// </summary>
         private async void OnMemoryItemAdd(object? sender, EventArgs e)
         {
-            if (sender is Button button)
-            {
-                var item = GetMemoryItemFromButton(button);
-                if (item != null && double.TryParse(DisplayLabel.Text, out double value))
-                {
-                    item.Value += value;
-                    await UpdateMemoryItemInDatabaseAsync(item);
-                }
-            }
+            if (sender is not Button button) return;
+            var item = GetMemoryItemFromButton(button);
+            if (item == null || !double.TryParse(_calculator.DisplayText, out var value)) return;
+            item.Value += value;
+            await UpdateMemoryItemInDatabaseAsync(item);
         }
 
         /// <summary>
@@ -633,27 +417,17 @@ namespace DotCalc
         /// </summary>
         private async void OnMemoryItemSubtract(object? sender, EventArgs e)
         {
-            if (sender is Button button)
-            {
-                var item = GetMemoryItemFromButton(button);
-                if (item != null && double.TryParse(DisplayLabel.Text, out double value))
-                {
-                    item.Value -= value;
-                    await UpdateMemoryItemInDatabaseAsync(item);
-                }
-            }
+            if (sender is not Button button) return;
+            var item = GetMemoryItemFromButton(button);
+            if (item == null || !double.TryParse(_calculator.DisplayText, out var value)) return;
+            item.Value -= value;
+            await UpdateMemoryItemInDatabaseAsync(item);
         }
 
         private static MemoryItem? GetMemoryItemFromButton(Button button)
         {
             // Поднимаемся по визуальному дереву: Button -> HorizontalStackLayout -> Grid
-            if (button.Parent is HorizontalStackLayout stackLayout && 
-                stackLayout.Parent is Grid grid && 
-                grid.BindingContext is MemoryItem item)
-            {
-                return item;
-            }
-            return null;
+            return button.Parent is HorizontalStackLayout { Parent: Grid { BindingContext: MemoryItem item } } ? item : null;
         }
 
     }

@@ -4,12 +4,12 @@
 		<TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
 
-		<!-- Note for MacCatalyst:
-		The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
-		When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
-		The Mac App Store will NOT accept apps with ONLY maccatalyst-arm64 indicated;
-		either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
-		<!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
+		<!-- Примечание для MacCatalyst:
+		Рантайм по умолчанию — maccatalyst-x64 (в Release обычно используется maccatalyst-x64;maccatalyst-arm64).
+		Если указываете обе архитектуры, используйте <RuntimeIdentifiers> (мн. число), а не <RuntimeIdentifier>.
+		Mac App Store не принимает приложение, собранное ТОЛЬКО под maccatalyst-arm64:
+		нужно указать обе архитектуры или только maccatalyst-x64. -->
+		<!-- Пример: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
 
 		<OutputType>Exe</OutputType>
 		<RootNamespace>DotCalc</RootNamespace>
@@ -18,17 +18,17 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
-		<!-- Display name -->
+		<!-- Отображаемое имя приложения -->
 		<ApplicationTitle>DotCalc</ApplicationTitle>
 
-		<!-- App Identifier -->
+		<!-- Идентификатор приложения -->
 		<ApplicationId>com.companyname.dotcalc</ApplicationId>
 
-		<!-- Versions -->
+		<!-- Версии -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
-		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
+		<!-- Как собирать/упаковывать/публиковать в Microsoft Store: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
@@ -39,24 +39,25 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- App Icon -->
+		<!-- Иконка приложения -->
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
 
-		<!-- Splash Screen -->
+		<!-- Сплэш-экран -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
 
-		<!-- Images -->
+		<!-- Изображения -->
 		<MauiImage Include="Resources\Images\*" />
 		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
 		
-		<!-- Custom Fonts -->
+		<!-- Пользовательские шрифты -->
 		<MauiFont Include="Resources\Fonts\*" />
 
-		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
+		<!-- "Сырые" ассеты (путь "Resources\\Raw" убирается из LogicalName) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- Пакеты MAUI (UI) и SQLite (хранение памяти калькулятора). -->
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Essentials" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
@@ -65,7 +66,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Services\" />
+		<!-- Общая логика (движок калькулятора, форматирование, модели, работа с SQLite). -->
+		<ProjectReference Include="..\\DotCalc.Core\\DotCalc.Core.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -7,16 +7,20 @@ namespace DotCalc.Data
     /// </summary>
     public class MemoryItemEntity
     {
+        /// <summary>
+        /// Первичный ключ записи (автоинкремент).
+        /// </summary>
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
         
+        /// <summary>
+        /// Числовое значение, сохраненное в памяти.
+        /// </summary>
         public double Value { get; set; }
         
         /// <summary>
         /// Порядок элемента (для сохранения порядка в списке)
         /// </summary>
         public int Order { get; set; }
-        
-        public DateTime CreatedAt { get; set; }
     }
 }
