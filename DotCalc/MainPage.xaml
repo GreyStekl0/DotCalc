@@ -357,7 +357,7 @@
             Grid.Column="1"
             BackgroundColor="#FAFAFA"
             StrokeThickness="0"
-            WidthRequest="220">
+            WidthRequest="620">
             <Grid RowDefinitions="Auto,*,Auto">
                 <!--  Tab Header  -->
                 <Grid
@@ -386,7 +386,7 @@
                     HeightRequest="2"
                     HorizontalOptions="Start"
                     VerticalOptions="End"
-                    WidthRequest="110"
+                    WidthRequest="310"
                     Color="#0078D4" />
 
                 <!--  History Content  -->
@@ -462,6 +462,7 @@
 
                                     <!--  Action Buttons (shown on hover)  -->
                                     <HorizontalStackLayout
+
                                         Grid.Row="1"
                                         Margin="0,4,0,0"
                                         IsVisible="{Binding IsHovered}"

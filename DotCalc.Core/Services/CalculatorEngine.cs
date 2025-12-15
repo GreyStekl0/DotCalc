@@ -65,10 +65,7 @@ namespace DotCalc.Services
         /// <summary>
         /// Очищает журнал вычислений.
         /// </summary>
-        public void ClearHistory()
-        {
-            History.Clear();
-        }
+        public void ClearHistory() => History.Clear();
 
         /// <summary>
         /// Загружает выбранный элемент истории на дисплей и готовит движок к новому вводу.
@@ -81,14 +78,12 @@ namespace DotCalc.Services
             ExpressionText = item.Expression;
             DisplayText = item.Result;
 
-            if (double.TryParse(item.Result, out double result))
+            if (double.TryParse(item.Result, out var result))
             {
                 _storedValue = result;
             }
 
-            _isNewEntry = true;
-            _currentOperator = string.Empty;
-            _justCalculated = false;
+            ResetEntryState();
         }
 
         /// <summary>
@@ -121,7 +116,7 @@ namespace DotCalc.Services
         /// </summary>
         public void Decimal()
         {
-            string separator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+            var separator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
 
             if (_isNewEntry)
             {
@@ -148,10 +143,9 @@ namespace DotCalc.Services
                 PerformCalculation();
             }
 
-            _currentValue = double.TryParse(DisplayText, out double value) ? value : 0;
-            _storedValue = _currentValue;
+            _storedValue = ParseDisplayValue();
             _currentOperator = op;
-            ExpressionText = NumberFormatter.FormatNumber(_storedValue) + " " + op;
+            ExpressionText = FormatExpression(_storedValue, op);
             _isNewEntry = true;
             _justCalculated = false;
         }
@@ -163,56 +157,11 @@ namespace DotCalc.Services
         {
             if (_justCalculated && !string.IsNullOrEmpty(_lastOperator))
             {
-                _storedValue = double.TryParse(DisplayText, out double value) ? value : 0;
-
-                ExpressionText = NumberFormatter.FormatNumber(_storedValue) + " " + _lastOperator + " " +
-                                 NumberFormatter.FormatNumber(_lastOperand) + " =";
-
-                double result = CalculateResult(_storedValue, _lastOperator, _lastOperand);
-
-                if (double.IsNaN(result) || double.IsInfinity(result))
-                {
-                    DisplayText = ErrorText;
-                    _isNewEntry = true;
-                    _justCalculated = false;
-                    return;
-                }
-
-                string resultText = NumberFormatter.FormatNumber(result);
-                DisplayText = resultText;
-                AddToHistory(ExpressionText, resultText);
-                _isNewEntry = true;
+                ExecuteRepeatCalculation();
             }
             else if (!string.IsNullOrEmpty(_currentOperator))
             {
-                _currentValue = double.TryParse(DisplayText, out double value) ? value : 0;
-
-                _lastOperator = _currentOperator;
-                _lastOperand = _currentValue;
-
-                ExpressionText = NumberFormatter.FormatNumber(_storedValue) + " " + _currentOperator + " " +
-                                 NumberFormatter.FormatNumber(_currentValue) + " =";
-
-                double result = CalculateResult(_storedValue, _currentOperator, _currentValue);
-
-                // Отлавливаем ошибки вычислений, чтобы не показывать NaN/Infinity пользователю.
-                if (double.IsNaN(result) || double.IsInfinity(result))
-                {
-                    DisplayText = ErrorText;
-                    _isNewEntry = true;
-                    _currentOperator = string.Empty;
-                    _justCalculated = false;
-                    return;
-                }
-
-                _storedValue = result;
-                string resultText = NumberFormatter.FormatNumber(result);
-                DisplayText = resultText;
-                AddToHistory(ExpressionText, resultText);
-
-                _currentOperator = string.Empty;
-                _isNewEntry = true;
-                _justCalculated = true;
+                ExecuteFirstCalculation();
             }
         }
 
@@ -251,8 +200,8 @@ namespace DotCalc.Services
                 return;
             }
 
-            string current = DisplayText;
-            if (current.Length == 1 || (current.Length == 2 && current.StartsWith("-", StringComparison.Ordinal)))
+            var current = DisplayText;
+            if (current.Length == 1 || (current.Length == 2 && current.StartsWith('-')))
             {
                 DisplayText = "0";
                 _isNewEntry = true;
@@ -268,11 +217,8 @@ namespace DotCalc.Services
         /// </summary>
         public void Negate()
         {
-            if (double.TryParse(DisplayText, out double value) && value != 0)
-            {
-                value = -value;
-                DisplayText = NumberFormatter.FormatNumber(value);
-            }
+            if (!double.TryParse(DisplayText, out var value) || value == 0) return;
+            DisplayText = NumberFormatter.FormatNumber(-value);
         }
 
         /// <summary>
@@ -280,20 +226,14 @@ namespace DotCalc.Services
         /// </summary>
         public void Percent()
         {
-            if (double.TryParse(DisplayText, out double value))
-            {
-                if (!string.IsNullOrEmpty(_currentOperator))
-                {
-                    value = _storedValue * (value / 100);
-                }
-                else
-                {
-                    value = value / 100;
-                }
+            if (!double.TryParse(DisplayText, out var value)) return;
+            
+            value = string.IsNullOrEmpty(_currentOperator) 
+                ? value / 100 
+                : _storedValue * (value / 100);
 
-                DisplayText = NumberFormatter.FormatNumber(value);
-                _isNewEntry = true;
-            }
+            DisplayText = NumberFormatter.FormatNumber(value);
+            _isNewEntry = true;
         }
 
         /// <summary>
@@ -301,14 +241,8 @@ namespace DotCalc.Services
         /// </summary>
         public void Square()
         {
-            if (double.TryParse(DisplayText, out double value))
-            {
-                string originalValue = NumberFormatter.FormatNumber(value);
-                double result = value * value;
-                ExpressionText = $"sqr({originalValue})";
-                DisplayText = NumberFormatter.FormatNumber(result);
-                _isNewEntry = true;
-            }
+            if (!double.TryParse(DisplayText, out var value)) return;
+            ApplyUnaryOperation(value, v => v * v, $"sqr({NumberFormatter.FormatNumber(value)})");
         }
 
         /// <summary>
@@ -316,21 +250,15 @@ namespace DotCalc.Services
         /// </summary>
         public void SquareRoot()
         {
-            if (double.TryParse(DisplayText, out double value))
+            if (!double.TryParse(DisplayText, out var value)) return;
+            
+            if (value < 0)
             {
-                if (value < 0)
-                {
-                    DisplayText = ErrorText;
-                    _isNewEntry = true;
-                    return;
-                }
-
-                string originalValue = NumberFormatter.FormatNumber(value);
-                double result = Math.Sqrt(value);
-                ExpressionText = $"√({originalValue})";
-                DisplayText = NumberFormatter.FormatNumber(result);
-                _isNewEntry = true;
+                SetError();
+                return;
             }
+
+            ApplyUnaryOperation(value, Math.Sqrt, $"√({NumberFormatter.FormatNumber(value)})");
         }
 
         /// <summary>
@@ -338,21 +266,106 @@ namespace DotCalc.Services
         /// </summary>
         public void Inverse()
         {
-            if (double.TryParse(DisplayText, out double value))
+            if (!double.TryParse(DisplayText, out var value)) return;
+            
+            if (value == 0)
             {
-                if (value == 0)
-                {
-                    DisplayText = ErrorText;
-                    _isNewEntry = true;
-                    return;
-                }
-
-                string originalValue = NumberFormatter.FormatNumber(value);
-                double result = 1 / value;
-                ExpressionText = $"1/({originalValue})";
-                DisplayText = NumberFormatter.FormatNumber(result);
-                _isNewEntry = true;
+                SetError();
+                return;
             }
+
+            ApplyUnaryOperation(value, v => 1 / v, $"1/({NumberFormatter.FormatNumber(value)})");
+        }
+
+        #region Private Methods
+
+        // Парсит текущее значение дисплея, возвращает 0 при ошибке.
+        private double ParseDisplayValue() => 
+            double.TryParse(DisplayText, out var value) ? value : 0;
+
+        // Форматирует выражение: "число оператор".
+        private static string FormatExpression(double left, string op) => 
+            $"{NumberFormatter.FormatNumber(left)} {op}";
+
+        // Форматирует полное выражение: "число оператор число =".
+        private static string FormatFullExpression(double left, string op, double right) => 
+            $"{NumberFormatter.FormatNumber(left)} {op} {NumberFormatter.FormatNumber(right)} =";
+
+        // Проверяет, является ли результат ошибочным (NaN или Infinity).
+        private static bool IsInvalidResult(double result) => 
+            double.IsNaN(result) || double.IsInfinity(result);
+
+        // Устанавливает состояние ошибки на дисплее.
+        private void SetError()
+        {
+            DisplayText = ErrorText;
+            _isNewEntry = true;
+            _currentOperator = string.Empty;
+            _justCalculated = false;
+        }
+
+        // Сбрасывает состояние ввода без очистки значений.
+        private void ResetEntryState()
+        {
+            _isNewEntry = true;
+            _currentOperator = string.Empty;
+            _justCalculated = false;
+        }
+
+        // Применяет унарную операцию и обновляет дисплей.
+        private void ApplyUnaryOperation(double value, Func<double, double> operation, string expression)
+        {
+            var result = operation(value);
+            ExpressionText = expression;
+            DisplayText = NumberFormatter.FormatNumber(result);
+            _isNewEntry = true;
+        }
+
+        // Выполняет первое вычисление (при первом нажатии "=").
+        private void ExecuteFirstCalculation()
+        {
+            _currentValue = ParseDisplayValue();
+            _lastOperator = _currentOperator;
+            _lastOperand = _currentValue;
+
+            ExpressionText = FormatFullExpression(_storedValue, _currentOperator, _currentValue);
+            var result = CalculateResult(_storedValue, _currentOperator, _currentValue);
+
+            if (IsInvalidResult(result))
+            {
+                SetError();
+                return;
+            }
+
+            _storedValue = result;
+            SetResultAndAddToHistory(result);
+            _currentOperator = string.Empty;
+            _justCalculated = true;
+        }
+
+        // Выполняет повторное вычисление (при повторном нажатии "=").
+        private void ExecuteRepeatCalculation()
+        {
+            _storedValue = ParseDisplayValue();
+            ExpressionText = FormatFullExpression(_storedValue, _lastOperator, _lastOperand);
+            var result = CalculateResult(_storedValue, _lastOperator, _lastOperand);
+
+            if (IsInvalidResult(result))
+            {
+                SetError();
+                return;
+            }
+
+            SetResultAndAddToHistory(result);
+        }
+
+        // Устанавливает результат на дисплей и добавляет в историю.
+        private void SetResultAndAddToHistory(double result)
+        {
+            var resultText = NumberFormatter.FormatNumber(result);
+            DisplayText = resultText;
+            AddToHistory(ExpressionText, resultText);
+            _isNewEntry = true;
         }
 
         // Добавляем новую строку в журнал (в начало списка, чтобы "последнее сверху").
@@ -381,16 +394,12 @@ namespace DotCalc.Services
         // Служебный шаг для "цепочки" операторов без нажатия "=".
         private void PerformCalculation()
         {
-            _currentValue = double.TryParse(DisplayText, out double value) ? value : 0;
+            _currentValue = ParseDisplayValue();
+            var result = CalculateResult(_storedValue, _currentOperator, _currentValue);
 
-            double result = CalculateResult(_storedValue, _currentOperator, _currentValue);
-
-            // Отлавливаем ошибки вычислений, чтобы не оставлять движок в некорректном состоянии.
-            if (double.IsNaN(result) || double.IsInfinity(result))
+            if (IsInvalidResult(result))
             {
-                DisplayText = ErrorText;
-                _isNewEntry = true;
-                _currentOperator = string.Empty;
+                SetError();
                 return;
             }
 
@@ -398,5 +407,7 @@ namespace DotCalc.Services
             DisplayText = NumberFormatter.FormatNumber(result);
             _isNewEntry = true;
         }
+
+        #endregion
     }
 }

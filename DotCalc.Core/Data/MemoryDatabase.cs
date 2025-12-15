@@ -40,7 +40,7 @@ namespace DotCalc.Data
         }
 
         /// <summary>
-        /// Получает все элементы памяти, отсортированные по полю <see cref="MemoryItemEntity.Order"/>.
+        /// Получает все элементы памяти, отсортированные по убыванию Id (новые первые).
         /// </summary>
         public async Task<List<MemoryItemEntity>> GetAllAsync()
         {
@@ -49,7 +49,7 @@ namespace DotCalc.Data
             {
                 var database = await GetDatabaseLockedAsync();
                 return await database.Table<MemoryItemEntity>()
-                    .OrderBy(x => x.Order)
+                    .OrderByDescending(x => x.Id)
                     .ToListAsync();
             }
             finally
@@ -72,28 +72,6 @@ namespace DotCalc.Data
                 return await database.Table<MemoryItemEntity>()
                     .Where(x => x.Id == id)
                     .FirstOrDefaultAsync();
-            }
-            finally
-            {
-                _mutex.Release();
-            }
-        }
-
-        /// <summary>
-        /// Увеличивает поле <see cref="MemoryItemEntity.Order"/> для всех записей на 1.
-        /// </summary>
-        /// <remarks>
-        /// Используется, чтобы вставлять новый элемент в начало списка (Order = 0),
-        /// сдвигая остальные вниз.
-        /// </remarks>
-        /// <returns>Количество обновленных строк.</returns>
-        public async Task<int> IncrementOrderForAllAsync()
-        {
-            await _mutex.WaitAsync();
-            try
-            {
-                var database = await GetDatabaseLockedAsync();
-                return await database.ExecuteAsync("UPDATE MemoryItemEntity SET \"Order\" = \"Order\" + 1");
             }
             finally
             {

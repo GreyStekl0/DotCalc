@@ -339,18 +339,14 @@ namespace DotCalc
 
         private async Task AddMemoryItemAsync(double value)
         {
-            // Сдвигаем порядок существующих элементов
-            await _memoryDb.IncrementOrderForAllAsync();
-
             // Создаём новую запись в БД
             var newEntity = new MemoryItemEntity
             {
-                Value = value,
-                Order = 0
+                Value = value
             };
             await _memoryDb.InsertAsync(newEntity);
 
-            // Добавляем в UI
+            // Добавляем в UI (новые элементы — в начало списка)
             MemoryList.Insert(0, new MemoryItem
             {
                 DatabaseId = newEntity.Id,

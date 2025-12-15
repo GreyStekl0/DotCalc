@@ -13,16 +13,16 @@ namespace DotCalc.Services
         /// </summary>
         public static string FormatNumber(double value)
         {
-            CultureInfo culture = CultureInfo.CurrentCulture;
+            var culture = CultureInfo.CurrentCulture;
 
             if (value == Math.Floor(value) && Math.Abs(value) < 1e15)
             {
                 return value.ToString("0", culture);
             }
 
-            string formatted = value.ToString("G15", culture);
+            var formatted = value.ToString("G15", culture);
 
-            int exponentIndex = formatted.IndexOf('E');
+            var exponentIndex = formatted.IndexOf('E');
             if (exponentIndex < 0)
             {
                 exponentIndex = formatted.IndexOf('e');
@@ -33,15 +33,15 @@ namespace DotCalc.Services
                 return TrimTrailingZerosAfterDecimal(formatted, culture);
             }
 
-            string mantissa = formatted[..exponentIndex];
-            string exponent = formatted[exponentIndex..];
+            var mantissa = formatted[..exponentIndex];
+            var exponent = formatted[exponentIndex..];
             mantissa = TrimTrailingZerosAfterDecimal(mantissa, culture);
             return mantissa + exponent;
         }
 
         private static string TrimTrailingZerosAfterDecimal(string text, CultureInfo culture)
         {
-            string separator = culture.NumberFormat.NumberDecimalSeparator;
+            var separator = culture.NumberFormat.NumberDecimalSeparator;
 
             // Если дробной части нет — ничего "подрезать" не нужно.
             if (!text.Contains(separator, StringComparison.Ordinal))

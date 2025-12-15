@@ -17,10 +17,5 @@ namespace DotCalc.Data
         /// Числовое значение, сохраненное в памяти.
         /// </summary>
         public double Value { get; set; }
-        
-        /// <summary>
-        /// Порядок элемента (для сохранения порядка в списке)
-        /// </summary>
-        public int Order { get; set; }
     }
 }

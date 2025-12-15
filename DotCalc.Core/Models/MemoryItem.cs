@@ -28,12 +28,10 @@ namespace DotCalc.Models
             get => _value;
             set
             {
-                if (_value != value)
-                {
-                    _value = value;
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(DisplayValue));
-                }
+                if (!(Math.Abs(_value - value) > double.Epsilon)) return;
+                _value = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(DisplayValue));
             }
         }
 
@@ -50,11 +48,9 @@ namespace DotCalc.Models
             get => _isHovered;
             set
             {
-                if (_isHovered != value)
-                {
-                    _isHovered = value;
-                    OnPropertyChanged();
-                }
+                if (_isHovered == value) return;
+                _isHovered = value;
+                OnPropertyChanged();
             }
         }
 

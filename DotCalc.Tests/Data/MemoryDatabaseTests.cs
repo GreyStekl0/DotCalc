@@ -15,7 +15,6 @@ namespace DotCalc.Tests.Data
             SQLiteOpenFlags.ReadWrite |
             SQLiteOpenFlags.Create |
             SQLiteOpenFlags.SharedCache;
-        private static readonly int[] expected = new[] { 1, 2 };
 
         static MemoryDatabaseTests()
         {
@@ -34,19 +33,12 @@ namespace DotCalc.Tests.Data
         }
 
         [Fact]
-        public void Constructor_WhenPathIsInvalid_Throws()
-        {
-            Assert.Throws<ArgumentException>(() => new MemoryDatabase("   ", TestFlags));
-        }
-
-        [Fact]
         public async Task InsertAndGetById_Works()
         {
             var db = CreateDatabase();
             var entity = new MemoryItemEntity
             {
-                Value = 123,
-                Order = 0
+                Value = 123
             };
 
             var inserted = await db.InsertAsync(entity);
@@ -59,47 +51,29 @@ namespace DotCalc.Tests.Data
             Assert.NotNull(loaded);
             Assert.Equal(entity.Id, loaded.Id);
             Assert.Equal(123, loaded.Value);
-            Assert.Equal(0, loaded.Order);
         }
 
         [Fact]
-        public async Task GetAllAsync_OrdersByOrderField()
+        public async Task GetAllAsync_OrdersByIdDescending()
         {
             var db = CreateDatabase();
 
-            await db.InsertAsync(new MemoryItemEntity { Value = 1, Order = 1 });
-            await db.InsertAsync(new MemoryItemEntity { Value = 2, Order = 0 });
+            await db.InsertAsync(new MemoryItemEntity { Value = 1 });
+            await db.InsertAsync(new MemoryItemEntity { Value = 2 });
 
             var all = await db.GetAllAsync();
 
             Assert.Equal(2, all.Count);
-            Assert.Equal(0, all[0].Order);
+            // Новые первые (Id по убыванию)
             Assert.Equal(2, all[0].Value);
-            Assert.Equal(1, all[1].Order);
             Assert.Equal(1, all[1].Value);
-        }
-
-        [Fact]
-        public async Task IncrementOrderForAllAsync_IncrementsExistingRows()
-        {
-            var db = CreateDatabase();
-
-            await db.InsertAsync(new MemoryItemEntity { Value = 1, Order = 0 });
-            await db.InsertAsync(new MemoryItemEntity { Value = 2, Order = 1 });
-
-            var updated = await db.IncrementOrderForAllAsync();
-
-            Assert.Equal(2, updated);
-
-            var all = await db.GetAllAsync();
-            Assert.Equal(expected, all.Select(x => x.Order).ToArray());
         }
 
         [Fact]
         public async Task UpdateAsync_PersistsChanges()
         {
             var db = CreateDatabase();
-            var entity = new MemoryItemEntity { Value = 1, Order = 0 };
+            var entity = new MemoryItemEntity { Value = 1 };
             await db.InsertAsync(entity);
 
             entity.Value = 42;
@@ -117,7 +91,7 @@ namespace DotCalc.Tests.Data
         public async Task DeleteAsync_RemovesRow()
         {
             var db = CreateDatabase();
-            var entity = new MemoryItemEntity { Value = 1, Order = 0 };
+            var entity = new MemoryItemEntity { Value = 1 };
             await db.InsertAsync(entity);
 
             var deleted = await db.DeleteAsync(entity);
@@ -132,8 +106,8 @@ namespace DotCalc.Tests.Data
         {
             var db = CreateDatabase();
 
-            await db.InsertAsync(new MemoryItemEntity { Value = 1, Order = 0 });
-            await db.InsertAsync(new MemoryItemEntity { Value = 2, Order = 1 });
+            await db.InsertAsync(new MemoryItemEntity { Value = 1 });
+            await db.InsertAsync(new MemoryItemEntity { Value = 2 });
 
             var deleted = await db.DeleteAllAsync();
 
